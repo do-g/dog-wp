@@ -6,7 +6,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<?php wp_head(); ?>
 </head>
-<body class="<?= dog__body_class() ?>">
+<body class="<?= dog__body_class() ?>" itemscope itemtype="http://schema.org/<?= dog__schema_page_type() ?>">
+	<meta itemprop="inLanguage" content="<?= dog__active_language() ?>">
 	<header>
 		<a href="<?= esc_url(home_url('/')) ?>" id="logo">
 			<img src="<?= dog__img_uri('logo.png') ?>" />
@@ -14,4 +15,4 @@
 		</a>
 		<?php wp_nav_menu(array('theme_location' => 'main-menu')) ?>
 	</header>
-	<main>
+	<main itemprop="mainContentOfPage">

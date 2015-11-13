@@ -8,7 +8,7 @@ if ($_POST['dog_submit']) {
 	    preg_match_all("/dog__txt\('(.*?)'\)/", file_get_contents($file), $matches);
 	    $labels = array_merge($labels, $matches[1]);
 	}
-	$content = array("<?php\n");
+	$content = array("<?php\n", "require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');\n");
 	foreach ($labels as $l) {
 		$key = sanitize_title($l);
 		if (!in_array($key, $keys)) {
