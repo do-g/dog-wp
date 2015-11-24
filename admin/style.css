@@ -1,0 +1,210 @@
+.dog-admin--section {
+	margin: 20px 0 10px 0;
+}
+
+.dog-admin--box {
+	background: #fff;
+	border: 1px solid #e5e5e5;
+	box-shadow: 0 1px 1px rgba(0,0,0,.04);
+	-webkit-box-shadow: 0 1px 1px rgba(0,0,0,.04);
+	margin: 0;
+}
+
+.dog-admin--box > h3 {
+	font-size: 14px;
+    padding: 8px 15px;
+    margin: 0;
+    line-height: 1.4;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    position: relative;
+}
+
+.dog-admin--box > h3::after {
+	position: absolute;
+	right: 0;
+	top: 0;
+	font: 400 20px/1 dashicons;
+    padding: 8px 10px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-decoration: none!important;
+    content: '\f140';
+}
+
+.dog-admin--section.expanded .dog-admin--box > h3 {
+    border-bottom: 1px solid #eee;
+}
+
+.dog-admin--section.expanded .dog-admin--box > h3::after {
+    content: '\f142';
+}
+
+.dog-admin--ajax-target.loading {
+	min-height: 32px;
+	background-image: url('images/loader.gif');
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+
+.dog-admin--box-content {
+	padding: 8px 15px;
+    line-height: 1.4em;
+    font-size: 13px;
+    display: none;
+}
+
+.dog-admin--section.expanded .dog-admin--box-content {
+    display: block;
+}
+
+.dog-admin--box-content pre {
+	padding: 20px;
+	background: #32373c;
+	color: #b4b9be;
+}
+
+.dog-admin--box-content pre table {
+	border-left: 1px dashed #b4b9be;
+	border-top: 1px dashed #b4b9be;
+}
+
+.dog-admin--box-content pre td,
+.dog-admin--box-content pre th {
+	border-right: 1px dashed #b4b9be;
+	border-bottom: 1px dashed #b4b9be;
+	padding: 5px 10px;
+}
+
+.dog-admin--box-content pre a {
+	text-decoration: none;
+}
+
+.dog-admin--hidden,
+.wp-core-ui .button.dog-admin--hidden {
+	display: none;
+}
+
+.dog-admin--message {
+	background: #fff;
+    border-left: 4px solid #7ad03a;
+    -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+	margin: 0 0 8px 0;
+    padding: 1px 12px;
+    position: relative;
+}
+
+.dog-admin--message p {
+	margin: .5em 0;
+    padding: 2px;
+}
+
+.dog-admin--error {
+	border-color: #dd3d36;
+}
+
+.dog-admin--message .notice-dismiss:before {
+    background: 0 0;
+    color: #b4b9be;
+    content: '\f153';
+    display: block;
+    font: 400 16px/20px dashicons;
+    speak: none;
+    height: 20px;
+    text-align: center;
+    width: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.wp-core-ui .button.dog-admin--control,
+.wp-core-ui .button-primary.dog-admin--control,
+.wp-core-ui .button-secondary.dog-admin--control {
+	display: none;
+}
+
+.wp-core-ui .button.dog-admin--control.after-default,
+.wp-core-ui .button-primary.dog-admin--control.after-default,
+.wp-core-ui .button-secondary.dog-admin--control.after-default,
+.wp-core-ui .button.dog-admin--control.after-all,
+.wp-core-ui .button-primary.dog-admin--control.after-all,
+.wp-core-ui .button-secondary.dog-admin--control.after-all {
+	display: inline-block;
+}
+
+.wp-core-ui .button.dog-admin--control.button-warning {
+	background: #f0ad4e;
+    border-color: #d78d15;
+    color: #fff;
+    -webkit-box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
+    box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
+}
+
+.form-field input[type=text],
+.form-field input[type=password],
+.form-field input[type=email],
+.form-field input[type=number],
+.form-field input[type=tel],
+.form-field input[type=url],
+.form-field input[type=search],
+.form-field textarea {
+	width: auto;
+}
+
+.dog-admin--ajaxform {
+	margin: 0 0 30px 0;
+}
+
+.dog-admin--ajaxform .form-field {
+	margin: 10px 0;
+}
+
+.dog-admin--ajaxform .wrapper-label-radio-group {
+	display: inline-block;
+}
+
+.dog-admin--ajaxform .form-label {
+	font-weight: bold;
+	transition: color 1s;
+}
+
+.dog-admin--ajaxform .form-label-input-radio {
+	font-weight: normal;
+	position: relative;
+	top: -2px;
+}
+
+.dog-admin--ajaxform .has-error label {
+	color: #ff0000;
+}
+
+.dog-admin--ajaxform .form-element-input {
+	transition: border-color 1s;
+}
+
+.dog-admin--ajaxform .has-error input {
+	border-color: #ff0000;
+}
+
+.dog-admin--ajaxform .field-error {
+	display: inline-block;
+	color: #ff0000;
+	margin: 0 0 0 30px;
+}
+
+#form-dog_admin__cache_settings .form-label {
+	display: inline-block;
+	width: 200px;
+}
+
+#form-dog_admin__cache_settings .form-label-input-radio {
+	width: auto;
+	margin: 0 21px 0 0;
+}
+
+#form-dog_admin__cache_settings .form-element-input-number {
+	width: 80px;
+}

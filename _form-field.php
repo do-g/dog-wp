@@ -1,37 +1,33 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-$fdata = $form_field_data;
-$tag = $fdata['field']['tag'];
-unset($fdata['field']['tag']);
-$field_name = $fdata['field']['name'];
-$fdata['field']['id'] = $fdata['field']['id'] ? $fdata['field']['id'] : $field_name;
-?>
-<?php if (isset($fdata['container'])) {
-	$default_class = array("form-field", "form-field-{$tag}", "form-field-{$tag}-{$fdata['field']['type']}");
-	$fdata['container']['class'] = dog__merge_form_field_classes($default_class, $fdata['container']['class']);
-	$attributes = dog__attributes_array_to_html($fdata['container']); ?>
-	<div<?= $attributes ?>>
-<?php } ?>
-<?php if (isset($fdata['label'])) {
-	$text = $fdata['label']['text'];
-	unset($fdata['label']['text']);
-	$default_class = array("form-label", "form-label-{$tag}", "form-label-{$tag}-{$fdata['field']['type']}");
-	$fdata['label']['class'] = dog__merge_form_field_classes($default_class, $fdata['label']['class']);
-	$attributes = dog__attributes_array_to_html($fdata['label']); ?>
-	<label for="<?= esc_attr($fdata['field']['id']) ?>"<?= $attributes ?>><?= esc_html($text) ?></label>
-<?php } ?>
-<?php if ($fld_errs = dog__get_field_errors($field_name)) { ?>
-	<?php foreach ($fld_errs as $type => $message) { ?>
-		<p class="form-error field-error field-error-<?= esc_attr($type) ?>"><?= esc_html($message) ?></p>
-	<?php } ?>
-<?php } ?>
-<?php
-$default_class = array("form-element", "form-element-{$tag}", "form-element-{$tag}-{$fdata['field']['type']}");
-$fdata['field']['class'] = dog__merge_form_field_classes($default_class, $fdata['field']['class']);
-set_query_var('form_field_data', $fdata);
-set_query_var('form_field_tag', $tag);
-get_template_part('_form-field-' . $tag);
-?>
-<?php if (isset($fdata['container'])) { ?>
-	</div>
-<?php } ?>
+
+$form_field_data['global']['content_placeholder'] = '{$content}';
+$form_field_data['field']['id'] = $form_field_data['field']['id'] ? $form_field_data['field']['id'] : $form_field_data['field']['name'];
+
+$html = array(
+	'errors' => dog__get_include_contents(dog__file_path('_form-field-errors.php'), $form_field_data),
+	'wrapper' => dog__get_include_contents(dog__file_path('_form-field-wrapper.php'), $form_field_data),
+	'label' => dog__get_include_contents(dog__file_path('_form-field-label.php'), $form_field_data),
+	'hint' => dog__get_include_contents(dog__file_path('_form-field-hint.php'), $form_field_data)
+);
+
+$default_class = array("form-element", "form-element-{$form_field_data['field']['tag']}", "form-element-{$form_field_data['field']['tag']}-{$form_field_data['field']['type']}", "form-element-id-{$form_field_data['field']['id']}");
+if (!$form_field_data['field']['type']) {
+	unset($default_class[2]);
+}
+$form_field_data['field']['class'] = dog__merge_form_field_classes($default_class, $form_field_data['field']['class']);
+
+$form_field_data['global']['tag'] = $form_field_data['field']['tag'];
+unset($form_field_data['field']['tag']);
+
+$html['field'] = dog__get_include_contents(dog__file_path('_form-field-' . $form_field_data['global']['tag'] . '.php'), $form_field_data);
+
+$ignore_keys = array('global', 'wrapper');
+$final_html = '';
+foreach ($form_field_data as $type => $info) {
+	if (!in_array($type, $ignore_keys)) {
+		$final_html .= $html[$type];
+	}
+}
+
+echo $html['wrapper'] ? str_replace($form_field_data['global']['content_placeholder'], $final_html, $html['wrapper']) : $final_html;

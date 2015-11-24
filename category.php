@@ -4,5 +4,5 @@ get_header();
 ?>
 <section itemscope itemtype="http://schema.org/ItemList">
 	<?php dog__showContent('_content-article') ?>
-</section
+</section>
 <?php get_footer() ?>

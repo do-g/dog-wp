@@ -1,5 +1,6 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-$attributes = dog__attributes_array_to_html($form_field_data['field']);
+$field = $data['field'];
+$attributes = dog__attributes_array_to_html($field);
 ?>
-<<?= tag_escape($form_field_tag) ?><?= $attributes ?> />
+<<?= tag_escape($data['global']['tag']) ?><?= $attributes ?> />

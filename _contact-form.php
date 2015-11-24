@@ -1,36 +1,60 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
-<form action="<?= DOG__URI_PATH_CONTACT ?>" method="post" class="contact-form">
+<form action="<?= dog__contact_uri() ?>" method="post" class="contact-form">
 	<?php
 		dog__show_form_field(array(
-			'container' => array(),
+			'wrapper' => array(),
 			'label' => array(
 				'text' => dog__txt('Numele dumneavoastră')
 			),
+			'errors' => array(),
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'text',
 				'name' => 'nume',
 				'value' => dog__get_post_value('nume'),
-				'placeholder' => strtoupper(dog__txt('Nume')),
-				'maxlength' => 30
+				'placeholder' => dog__txt('Nume'),
+				'maxlength' => 30,
+				'required' => 'required'
 			)
 		));
 		dog__show_form_field(array(
-			'container' => array(),
-			'label' => array(
-				'text' => dog__txt('Adresa dumneavoastră email')
-			),
+			'wrapper' => array(),
+			'errors' => array(),
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'email',
 				'name' => 'email',
 				'value' => dog__get_post_value('email'),
-				'placeholder' => strtoupper(dog__txt('E-mail')),
-				'maxlength' => 50
+				'placeholder' => dog__txt('Adresa email'),
+				'maxlength' => 50,
+				'required' => 'required'
+			),
+			'hint' => array(
+				'text' => dog__txt('Veți primi răspuns pe această adresă'),
 			)
 		));
 		dog__show_form_field(array(
-			'container' => array(),
+			'field' => array(
+				'tag' => 'input',
+				'type' => 'tel',
+				'name' => 'telefon',
+				'value' => dog__get_post_value('telefon'),
+				'placeholder' => dog__txt('+40 722 312 789')
+			)
+		));
+		dog__show_form_field(array(
+			'field' => array(
+				'tag' => 'input',
+				'type' => 'number',
+				'name' => 'varsta',
+				'value' => dog__get_post_value('varsta')
+			),
+			'label' => array(
+				'text' => dog__txt('Vârsta dumneavoastră')
+			)
+		));
+		dog__show_form_field(array(
+			'wrapper' => array(),
 			'label' => array(
 				'text' => dog__txt('Mesajul dumneavoastră')
 			),
@@ -38,8 +62,10 @@
 				'tag' => 'textarea',
 				'name' => 'mesaj',
 				'value' => dog__get_post_value('mesaj'),
-				'placeholder' => strtoupper(dog__txt('Mesaj'))
-			)
+				'placeholder' => dog__txt('Mesaj'),
+				'required' => 'required'
+			),
+			'errors' => array()
 		));
 		dog__show_form_field(array(
 			'field' => array(
@@ -50,20 +76,8 @@
 				'value' => dog__txt('Trimite')
 			)
 		));
-		wp_nonce_field(DOG__NONCE_ACTION, DOG__NONCE_NAME);
+		dog__nonce_field(dog__contact_uri());
+		dog__honeypot_field();
+		dog__render_form_errors();
 	?>
-	<?php
-		$frm_errs = dog__get_form_errors();
-		if (!$frm_errs) {
-			$frm_errs = dog__get_flash_error('form');
-			$frm_errs = $frm_errs ? array('generic' => $frm_errs) : null;
-		}
-	?>
-	<?php if ($frm_errs) { ?>
-		<?php foreach ($frm_errs as $type => $message) { ?>
-			<p class="form-message form-error form-error-<?= esc_attr($type) ?>"><?= esc_html($message) ?></p>
-		<?php } ?>
-	<?php } else { ?>
-		<p class="form-message form-success"><?= esc_html(dog__get_flash_success('form')) ?></p>
-	<?php } ?>
 </form>
