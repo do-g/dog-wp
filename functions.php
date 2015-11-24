@@ -288,6 +288,10 @@ function dog__is_post($key = null) {
 	return strtoupper($_SERVER['REQUEST_METHOD']) == 'POST' && ($key ? dog__get_post_value($key) : 1);
 }
 
+function dog__is_get($key = null) {
+	return strtoupper($_SERVER['REQUEST_METHOD']) == 'GET' && ($key ? sanitize_text_field($key) : 1);
+}
+
 function dog__get_option($name, $default = null) {
 	return get_option(DOG__PREFIX_ADMIN . $name, $default);
 }
@@ -582,7 +586,7 @@ function dog__save_output_cache($buffer) {
 
 function dog__check_output_cache() {
 	global $dog__output_cache_ignore_uri;
-	if (dog__get_option(DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED)) {
+	if (dog__is_get() && dog__get_option(DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED)) {
 		$cache_key = dog__get_uri_cache_key();
 		if (false === ($cache = get_transient($cache_key))) {
 			$uri = dog__current_uri(false, true);
