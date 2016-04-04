@@ -6,13 +6,3 @@ Version: 1.0
 Tags: dog, default
 Text Domain: dog
 */
-
-body, html {
-	margin: 0;
-	padding: 0;
-	width: 100%;
-	min-height: 100%;
-	font-family: sans-serif;
-	-webkit-font-smoothing: antialiased;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
-}

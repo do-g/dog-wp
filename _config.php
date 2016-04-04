@@ -49,14 +49,21 @@ define('DOG__SESSION_KEY_ERROR', 'error');
 define('DOG__REGEX_KEY_EMAIL', 'email');
 define('DOG__PREFIX', 'dog__');
 define('DOG__PREFIX_ADMIN', 'dog_admin__');
+define('DOG__PREFIX_LOCAL', 'dog_local__');
+define('DOG__PREFIX_AJAX', 'dog_ajax__');
 define('DOG__TRANSIENT_OUTPUT_CACHE_PREFIX', DOG__PREFIX . 'outcache');
+/**********************************************/
+define('DOG__NONCE_VAR_PREFIX', 'nonce__');
+define('DOG__WP_ACTION_AJAX_CALLBACK', 'dog__ajax');
+define('DOG__AJAX_RESPONSE_STATUS_SUCCESS', dog__hash('ajaxresponseok'));
+define('DOG__AJAX_RESPONSE_STATUS_ERROR', dog__hash('ajaxresponseerror'));
+define('DOG__AJAX_RESPONSE_CODE_INVALID_NONCE', 1001);
+define('DOG__AJAX_RESPONSE_CODE_INVALID_METHOD', 1002);
 /**********************************************/
 define('DOG_ADMIN__DIR', 'admin');
 define('DOG_ADMIN__MENU_SLUG', 'dog-theme-options');
 define('DOG_ADMIN__NAMESPACE_CACHE_SETTINGS', 'cache_settings');
 define('DOG_ADMIN__WP_ACTION_AJAX_CALLBACK', 'dog_admin__ajax');
-define('DOG_ADMIN__AJAX_NONCE_FIELD', '_ajax_nonce');
-define('DOG_ADMIN__AJAX_NONCE_VAR_PREFIX', 'nonce__');
 define('DOG_ADMIN__SECTION_FILE_PREFIX', 'section-');
 define('DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER', '{$code}');
 define('DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH', 'nonce_mismatch');

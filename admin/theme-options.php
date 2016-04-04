@@ -9,7 +9,8 @@ function dog_admin__add_menu(){
 	$capability = 'administrator';
 	$menu_slug = DOG_ADMIN__MENU_SLUG;
 	$function = 'dog_admin__theme_options';
-    add_options_page($page_title, $menu_title, $capability, $menu_slug, $function);
+	$icon = 'dashicons-layout';
+    add_menu_page($page_title, $menu_title, $capability, $menu_slug, $function, $icon);
 }
 
 function dog_admin__theme_options() {
@@ -128,10 +129,11 @@ function dog_admin__cache_output_delete() {
 	return dog_admin__ajax_response_success(_dog_admin__list_output_cache(), DOG_ADMIN__AJAX_RESPONSE_KEY_SUCCESS2);
 }
 
-function dog_admin__ajax() {
-	$method = dog__get_post_value('method');
-	$ajax_nonce = dog__get_post_value(DOG_ADMIN__AJAX_NONCE_FIELD);
-	if (!check_ajax_referer(dog__hash($method), false, false)) {
+function dog_admin__ajax_handler() {
+	dog__ajax_handler(true);
+	/*$method = dog__get_post_value('method');
+	$ajax_nonce = dog__get_post_value('_ajax_nonce');
+	if (!check_ajax_referer($method, false, false)) {
 		$response = dog_admin__ajax_response(DOG_ADMIN__AJAX_RESPONSE_CODE_INVALID_NONCE);
 	} else if ($method && substr($method, 0, 11) == DOG__PREFIX_ADMIN) {
 		if (function_exists($method)) {
@@ -143,12 +145,12 @@ function dog_admin__ajax() {
 		$response = dog_admin__ajax_response(DOG_ADMIN__AJAX_RESPONSE_CODE_INVALID_METHOD);
 	}
 	$response->_ajax_nonce = $ajax_nonce;
-	wp_send_json($response);
+	wp_send_json($response);*/
 }
 
 function dog_admin__enqueue_assets($hook) {
 	global $dog_admin__sections;
-	if ($hook != 'settings_page_' . DOG_ADMIN__MENU_SLUG) {
+	if ($hook != 'toplevel_page_' . DOG_ADMIN__MENU_SLUG) {
 		return;
 	}
 	wp_enqueue_style('styles', dog__admin_uri() . '/style.css');
@@ -157,9 +159,9 @@ function dog_admin__enqueue_assets($hook) {
 	if ($dog_admin__sections) {
 		$vars = array(
 			'DOG__ENV' => DOG__ENV,
-			'DOG_ADMIN__WP_ACTION_AJAX_CALLBACK' => DOG_ADMIN__WP_ACTION_AJAX_CALLBACK,
-			'DOG_ADMIN__AJAX_NONCE_FIELD' => DOG_ADMIN__AJAX_NONCE_FIELD,
-			'DOG_ADMIN__AJAX_NONCE_VAR_PREFIX' => DOG_ADMIN__AJAX_NONCE_VAR_PREFIX,
+			'DOG__NONCE_NAME' => DOG__NONCE_NAME,
+			'DOG__NONCE_VAR_PREFIX' => DOG__NONCE_VAR_PREFIX,
+			'DOG__WP_ACTION_AJAX_CALLBACK' => DOG__WP_ACTION_AJAX_CALLBACK,
 			'DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER' => DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER,
 			'DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH' => DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH,
 			'DOG_ADMIN__AJAX_RESPONSE_STATUS_SUCCESS' => DOG_ADMIN__AJAX_RESPONSE_STATUS_SUCCESS,
@@ -172,16 +174,16 @@ function dog_admin__enqueue_assets($hook) {
 		foreach ($dog_admin__sections as $action => $nonce) {
 			if (is_array($nonce)) {
 				foreach ($nonce as $a => $n) {
-					$vars[DOG_ADMIN__AJAX_NONCE_VAR_PREFIX . $a] = wp_create_nonce(dog__hash($n ? $n : $a));
+					$vars[dog__nonce_var_key($a)] = wp_create_nonce($n ? $n : $a);
 				}
 			} else {
-				$vars[DOG_ADMIN__AJAX_NONCE_VAR_PREFIX . $action] = wp_create_nonce(dog__hash($nonce ? $nonce : $action));
+				$vars[dog__nonce_var_key($action)] = wp_create_nonce($nonce ? $nonce : $action);
 			}
 		}
-		wp_localize_script('scripts', 'dog_admin__ajax_context', $vars);
+		wp_localize_script('scripts', 'dog_admin__wp', $vars);
 	}
 }
 
 add_action('admin_menu', 'dog_admin__add_menu');
 add_action('admin_enqueue_scripts', 'dog_admin__enqueue_assets', 99999);
-add_action('wp_ajax_dog_admin__ajax', DOG_ADMIN__WP_ACTION_AJAX_CALLBACK);
+add_action('wp_ajax_' . DOG_ADMIN__WP_ACTION_AJAX_CALLBACK, 'dog_admin__ajax_handler');

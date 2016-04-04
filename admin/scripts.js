@@ -71,11 +71,10 @@ function dog_admin__request(obj, method, params, extra_options, target) {
 	options = jQuery.extend(options, extra_options);
 	dog_admin__ajax(options, {
 		done: function(response, textStatus, jqXHR) {
-			console.log(response);
 			dog_admin__process_response(obj, method, response, options, target);
 		},
 		fail: function(jqXHR, textStatus, errorThrown) {
-			dog_admin__show_message(obj, dog_admin__ajax_context.DOG_ADMIN__AJAX_RESPONSE_KEY_AJAX, dog_admin__ajax_context.DOG_ADMIN__AJAX_RESPONSE_CODE_AJAX);
+			dog_admin__show_message(obj, dog_admin__wp.DOG_ADMIN__AJAX_RESPONSE_KEY_AJAX, dog_admin__wp.DOG_ADMIN__AJAX_RESPONSE_CODE_AJAX);
 		},
 		allways: function(data_jqXHR, textStatus, jqXHR_errorThrown) {
 			jQuery(target).removeClass(DOG_ADMIN__CSS_CLASS_LOADING);
@@ -85,12 +84,12 @@ function dog_admin__request(obj, method, params, extra_options, target) {
 }
 
 function dog_admin__prepare_request_data(method, params) {
-	var nonce_key = dog_admin__ajax_context.DOG_ADMIN__AJAX_NONCE_VAR_PREFIX + method;
+	var nonce_key = dog_admin__wp.DOG__NONCE_VAR_PREFIX + method;
 	var general = {
-		action: dog_admin__ajax_context.DOG_ADMIN__WP_ACTION_AJAX_CALLBACK,
+		action: dog_admin__wp.DOG_ADMIN__WP_ACTION_AJAX_CALLBACK,
 		method: method
 	};
-	general[dog_admin__ajax_context.DOG_ADMIN__AJAX_NONCE_FIELD] = dog_admin__ajax_context[nonce_key];
+	general[dog_admin__wp.DOG__NONCE_NAME] = dog_admin__wp[nonce_key];
 	return jQuery.extend(general, params);
 }
 
@@ -102,9 +101,9 @@ function dog_admin__before_request(obj, method, settings, target) {
 }
 
 function dog_admin__process_response(obj, method, response, options, target) {
-	if (!response[dog_admin__ajax_context.DOG_ADMIN__AJAX_NONCE_FIELD] || response[dog_admin__ajax_context.DOG_ADMIN__AJAX_NONCE_FIELD] != options.data[dog_admin__ajax_context.DOG_ADMIN__AJAX_NONCE_FIELD]) {
-		dog_admin__show_message(obj, dog_admin__ajax_context.DOG_ADMIN__AJAX_RESPONSE_KEY_FAILURE, dog_admin__ajax_context.DOG_ADMIN__AJAX_RESPONSE_CODE_MISMATCH_NONCE);
-		method = dog_admin__ajax_context.DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH;
+	if (!response[dog_admin__wp.DOG__NONCE_NAME] || response[dog_admin__wp.DOG__NONCE_NAME] != options.data[dog_admin__wp.DOG__NONCE_NAME]) {
+		dog_admin__show_message(obj, dog_admin__wp.DOG_ADMIN__AJAX_RESPONSE_KEY_FAILURE, dog_admin__wp.DOG_ADMIN__AJAX_RESPONSE_CODE_MISMATCH_NONCE);
+		method = dog_admin__wp.DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH;
 	} else {
 		dog_admin__show_message(obj, response.key, response.code);
 		var is_error;
@@ -122,7 +121,7 @@ function dog_admin__process_response(obj, method, response, options, target) {
 }
 
 function dog_admin__is_response_error(response) {
-	return response.status == dog_admin__ajax_context.DOG_ADMIN__AJAX_RESPONSE_STATUS_ERROR;
+	return response.status == dog_admin__wp.DOG_ADMIN__AJAX_RESPONSE_STATUS_ERROR;
 }
 
 function dog_admin__empty_ajax_target(obj, show_only, target) {
@@ -139,7 +138,7 @@ function dog_admin__show_message(obj, key, code) {
 	var parent = dog_admin__get_parent_section(obj);
 	var notice = jQuery(parent).find('.dog-admin--message.status-' + key)[0];
 	if (code) {
-		jQuery(notice).html(jQuery(notice).html().replace(dog_admin__ajax_context.DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER, code));
+		jQuery(notice).html(jQuery(notice).html().replace(dog_admin__wp.DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER, code));
 	}
 	jQuery(notice).find('button.notice-dismiss').click(function(){
 		dog_admin__hide_messages(obj, [key]);

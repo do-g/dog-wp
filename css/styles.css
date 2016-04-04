@@ -1,0 +1,184 @@
+/*
+Theme Name: DOG Default
+Author: Dorin Gurău
+Description: Default custom theme for WordPress
+Version: 1.0
+Tags: dog, default
+Text Domain: dog
+*/
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-font-smoothing: antialiased;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
+}
+
+body {
+	margin: 0;
+	padding: 0;
+}
+
+/***** general *****/
+
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+.clearfix {
+    *zoom: 1;
+}
+
+/***** preloader *****/
+
+body.preloading .page-header,
+body.preloading .page-main,
+body.preloading .page-footer {
+	opacity: 0;
+}
+
+body.preloading .preloader {
+	display: block;
+}
+
+.preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #ccc;
+  transition: opacity 0.3s;
+  z-index: 1;
+  display: none;
+}
+
+.preloader .bar {
+	width: 1%;
+	height: 100%;
+	background: #ed5e4e;
+	transition: all .2s;
+}
+
+/***** responsive visibility *****/
+
+*[class^="show-"],
+*[class*=" show-"] {
+    display: none;
+}
+
+/***** only large screens *****/
+
+@media (min-width: 1200px) {
+
+	/***** responsive visibility *****/
+
+	.show-large-block,
+	.show-desktop-block {
+		display: block;
+	}
+
+	.show-large-inline-block,
+	.show-desktop-inline-block {
+		display: inline-block;
+	}
+
+	.show-large-inline,
+	.show-desktop-inline {
+		display: inline;
+	}
+
+}
+
+/***** medium screens and below *****/
+
+@media (max-width: 1199px) {
+
+
+
+}
+
+/***** only medium screens *****/
+
+@media (max-width: 1199px) and (min-width: 992px) {
+
+	/***** responsive visibility *****/
+
+	.show-medium-block,
+	.show-desktop-block {
+		display: block;
+	}
+
+	.show-medium-inline-block,
+	.show-desktop-inline-block {
+		display: inline-block;
+	}
+
+	.show-medium-inline,
+	.show-desktop-inline {
+		display: inline;
+	}
+
+}
+
+/***** tablets and below *****/
+
+@media (max-width: 991px) {
+
+
+
+}
+
+/***** only tablets *****/
+
+@media (max-width: 991px) and (min-width: 768px) {
+
+	/***** responsive visibility *****/
+
+	.show-tablet-block,
+	.show-mobile-block {
+		display: block;
+	}
+
+	.show-tablet-inline-block,
+	.show-mobile-inline-block {
+		display: inline-block;
+	}
+
+	.show-tablet-inline,
+	.show-mobile-inline {
+		display: inline;
+	}
+
+}
+
+/***** phones *****/
+
+@media (max-width: 767px) {
+
+	/***** responsive visibility *****/
+
+	.show-phone-block,
+	.show-mobile-block {
+		display: block;
+	}
+
+	.show-phone-inline-block,
+	.show-mobile-inline-block {
+		display: inline-block;
+	}
+
+	.show-phone-inline,
+	.show-mobile-inline {
+		display: inline;
+	}
+
+}

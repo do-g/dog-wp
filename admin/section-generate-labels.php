@@ -11,7 +11,7 @@ $dog_admin__alert_success = __('Etichetele au fost generate') . '. <a href="/wp-
 			<p>Etichetele sunt acele fragmente text care apar pe sit dar nu fac parte din conținut.
 			Folosește această secțiune pentru a genera automat lista de etichete prezente în tema sitului.
 			Sistemul va citi fișierele temei și va extrage etichetele pentru a putea fi modificate.
-			După finalizarea procesului lista de etichete va fi disponibilă în secțiunea <a href="/wp-admin/options-general.php?page=mlang&tab=strings">Limbi disponibile</a>.
+			După finalizarea procesului lista de etichete va fi disponibilă în secțiunea <a href="/wp-admin/options-general.php?page=mlang&tab=strings&group=theme">Limbi disponibile</a>.
 			Apasă butonul de mai jos pentru a începe căutarea și procesarea etichetelor.</p>
 			<div class="dog-admin--ajax-target"></div>
 			<p class="dog-admin--controls">

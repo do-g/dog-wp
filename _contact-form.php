@@ -69,7 +69,7 @@
 		));
 		dog__show_form_field(array(
 			'field' => array(
-				'tag' => 'input',
+				'tag' => 'button',
 				'type' => 'submit',
 				'name' => 'contact_submit',
 				'class' => 'button',
