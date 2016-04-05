@@ -13,7 +13,7 @@ Text Domain: dog
 
 html {
 	-webkit-font-smoothing: antialiased;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -39,9 +39,7 @@ body {
 
 /***** preloader *****/
 
-body.preloading .page-header,
-body.preloading .page-main,
-body.preloading .page-footer {
+body.preloading .page-wrapper {
 	opacity: 0;
 }
 

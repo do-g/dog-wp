@@ -13,7 +13,7 @@
 	<?php get_template_part('_preloader') ?>
 	<header class="page-header">
 		<a href="<?= esc_url(home_url('/')) ?>" id="logo">
-			<img src="<?= dog__img_uri('logo.png') ?>" />
+			<img src="<?= dog__img_url('logo.png') ?>" />
 			<span><?= dog__txt('Bine ați venit') ?></span>
 		</a>
 		<?php wp_nav_menu(array('theme_location' => 'location-main-menu', 'menu_class' => 'main-menu', 'container' => false)) ?>
