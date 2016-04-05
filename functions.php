@@ -5,6 +5,7 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 define('DOG__ENV_DEVELOPMENT', 'development');
 define('DOG__ENV_PRODUCTION', 'production');
 
+require_once(realpath(dirname(__FILE__)) . '/_functions.php');
 require_once(realpath(dirname(__FILE__)) . '/_config.php');
 
 date_default_timezone_set(DOG__TIMEZONE);
@@ -50,8 +51,9 @@ function dog__css_uri($style_file_name, $display = true) {
 	return dog__safe_uri(get_stylesheet_directory_uri() . '/css/' . $style_file_name . '.css', $display);
 }
 
-function dog__admin_uri() {
-	return get_stylesheet_directory_uri() . '/' . DOG_ADMIN__DIR;
+function dog__admin_uri($path = null) {
+	$path = $path ? '/' . ltrim($path, '/') : '';
+	return get_stylesheet_directory_uri() . '/' . DOG__ADMIN_DIR . $path;
 }
 
 function dog__lang_uri($slug_or_id, $type = 'page', $display = true) {
@@ -72,11 +74,20 @@ function dog__lang_uri($slug_or_id, $type = 'page', $display = true) {
 }
 
 function dog__file_path($filename) {
-	return get_stylesheet_directory() . '/' . $filename;
+	return get_stylesheet_directory() . '/' . ltrim($filename, '/');
 }
 
 function dog__admin_file_path($filename) {
-	return dog__file_path(DOG_ADMIN__DIR . '/' . $filename);
+	return dog__file_path(DOG__ADMIN_DIR . '/' . ltrim($filename, '/'));
+}
+
+function dog__get_include_contents($filepath, $data = null) {
+    if (is_file($filepath)) {
+        ob_start();
+        include $filepath;
+        return ob_get_clean();
+    }
+    return false;
 }
 
 function dog__debug_queries() {
@@ -460,8 +471,10 @@ function dog__get_email_template($name, $lang = null) {
 }
 
 function dog__replace_template_vars($template, $data) {
-	foreach ($data as $key => $value) {
-		$template = str_replace('${' . $key . '}', $value, $template);
+	if ($template && $data) {
+		foreach ($data as $key => $value) {
+			$template = str_replace('${' . $key . '}', $value, $template);
+		}
 	}
 	return $template;
 }
@@ -586,15 +599,6 @@ function dog__override_template($template) {
 	return $template;
 }
 
-function dog__get_include_contents($filepath, $data = null) {
-    if (is_file($filepath)) {
-        ob_start();
-        include $filepath;
-        return ob_get_clean();
-    }
-    return false;
-}
-
 function dog__log($data, $file = null) {
 	if (is_array($data) || is_object($data)) {
 		$data = var_export($data, true);
@@ -673,20 +677,24 @@ function dog__enqueue_assets_low_priority() {
 	wp_enqueue_style('styles', dog__css_uri('styles'), array('vendor'));
 	wp_enqueue_script('vendor', dog__js_uri('vendor'), null, null, true);
 	wp_enqueue_script('doglib', dog__js_uri('lib'), array('vendor'), null, true);
-	$theme_vars = array(
+	$js_vars = dog__extend_with('js_vars', dog__js_vars());
+	wp_localize_script('doglib', 'dog__wp', $js_vars);
+	wp_enqueue_script('scripts', dog__js_uri('scripts'), array('doglib'), null, true);
+	dog__call_local_function(__FUNCTION__);
+}
+
+function dog__js_vars() {
+	return array(
 		'theme_url' => get_bloginfo('template_url'),
 		'ajax_url' => admin_url('admin-ajax.php'),
 		'DOG__NONCE_NAME' => DOG__NONCE_NAME,
 		'DOG__NONCE_VAR_PREFIX' => DOG__NONCE_VAR_PREFIX,
 		'DOG__WP_ACTION_AJAX_CALLBACK' => DOG__WP_ACTION_AJAX_CALLBACK,
+		'DOG__AJAX_RESPONSE_STATUS_SUCCESS' => DOG__AJAX_RESPONSE_STATUS_SUCCESS,
+		'DOG__AJAX_RESPONSE_STATUS_ERROR' => DOG__AJAX_RESPONSE_STATUS_ERROR,
+		'DOG__ALERT_KEY_SERVER_FAILURE' => dog__alert_message(DOG__ALERT_KEY_SERVER_FAILURE),
+		'DOG__ALERT_KEY_CLIENT_FAILURE' => dog__alert_message(DOG__ALERT_KEY_CLIENT_FAILURE),
 	);
-	$local_vars = dog__call_local_function('js_vars');
-	if ($local_vars) {
-		$theme_vars = array_merge($theme_vars, $local_vars);
-	}
-	wp_localize_script('doglib', 'dog__wp', $theme_vars);
-	wp_enqueue_script('scripts', dog__js_uri('scripts'), array('doglib'), null, true);
-	dog__call_local_function(__FUNCTION__);
 }
 
 function dog__async_defer($url) {
@@ -740,6 +748,15 @@ function dog__custom_image_sizes($sizes) {
 	return $sizes;
 }
 
+function dog__alert_message($key, $params = null) {
+	global $dog__alert_messages;
+	return dog__replace_template_vars($dog__alert_messages[$key], $params);
+}
+
+function dog__alert_message_code($key, $code) {
+	return dog__alert_message($key, array('code' => $code));
+}
+
 function dog__ajax_response($data, $success = true, $extra = array()) {
 	$response = new stdClass();
 	$response->status = $success ? DOG__AJAX_RESPONSE_STATUS_SUCCESS : DOG__AJAX_RESPONSE_STATUS_ERROR;
@@ -752,6 +769,10 @@ function dog__ajax_response($data, $success = true, $extra = array()) {
 	return $response;
 }
 
+function dog__ajax_response_ok($data, $info = array()) {
+	return dog__ajax_response($data, true, $info);
+}
+
 function dog__ajax_response_error($info = array()) {
 	return dog__ajax_response(null, false, $info);
 }
@@ -762,27 +783,33 @@ function dog__ajax_handler() {
 	$method = dog__get_post_value('method');
 	$function = DOG__PREFIX_AJAX . dog__string_to_key($method);
 	if (!check_ajax_referer($method, $nonce_key, false)) {
-		$response = dog__ajax_response_error(array('code' => DOG__AJAX_RESPONSE_CODE_INVALID_NONCE));
+		$response = dog__ajax_response_error(array('message' => dog__alert_message_code(DOG__ALERT_KEY_RESPONSE_ERROR, DOG__AJAX_RESPONSE_CODE_INVALID_NONCE)));
 	} else if (!$method || !function_exists($function)) {
-		$response = dog__ajax_response_error(array('code' => DOG__AJAX_RESPONSE_CODE_INVALID_METHOD));
+		$response = dog__ajax_response_error(array('message' => dog__alert_message_code(DOG__ALERT_KEY_RESPONSE_ERROR, DOG__AJAX_RESPONSE_CODE_INVALID_METHOD)));
 	} else {
 		$response = call_user_func($function);
 	}
-	$response = dog__ajax_response($response);
 	$response->$nonce_key = $nonce;
 	wp_send_json($response);
 }
 
-function dog__call_local_function($function_name, $params = array()) {
+function dog__call_local_function($function_name, $params = null) {
 	$function_name = str_replace(DOG__PREFIX_LOCAL, '', $function_name);
+	$function_name = str_replace(DOG__PREFIX_ADMIN, '', $function_name);
 	$function_name = str_replace(DOG__PREFIX, '', $function_name);
 	$function_name = DOG__PREFIX_LOCAL . $function_name;
 	if (function_exists($function_name)) {
-		return call_user_func_array($function_name, $params);
+		return call_user_func($function_name, $params);
 	}
 }
 
-require_once(realpath(dirname(__FILE__)) . '/_functions.php');
+function dog__extend_with($function_name, $default = null, $params = null) {
+	$local_value = dog__call_local_function($function_name, $params);
+	if ($local_value) {
+		return is_array($default) ? array_merge($default, $local_value) : $local_value;
+	}
+	return $default;
+}
 
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
@@ -792,7 +819,7 @@ if (!is_admin()) {
 	add_filter('clean_url', 'dog__async_defer', 11, 1);
 	add_action('after_setup_theme', 'dog__check_output_cache');
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_high_priority', 0);
-	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99999);
+	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99990);
 	add_action('pre_get_posts', 'dog__enable_query_tags');
 	remove_action('wp_head', 'rsd_link'); // remove really simple discovery link
 	remove_action('wp_head', 'wp_generator'); // remove wordpress version
@@ -809,12 +836,13 @@ add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');
 add_action('wp_ajax_nopriv_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
 add_action('wp_ajax_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
-
-$dog__pll_labels_file = realpath(dirname(__FILE__)) . '/_pll_labels.php';
-if (is_file($dog__pll_labels_file)) {
-	require_once($dog__pll_labels_file);
-}
+dog__call_local_function('hooks');
 
 if (is_admin()) {
 	require_once(realpath(dirname(__FILE__)) . '/admin/theme-options.php');
+}
+
+$dog__pll_labels_file = realpath(dirname(__FILE__)) . '/_pll_labels.php';
+if (is_file($dog__pll_labels_file) && dog__plugin_is_active('polylang')) {
+	require_once($dog__pll_labels_file);
 }

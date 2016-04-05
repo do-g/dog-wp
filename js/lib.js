@@ -41,20 +41,20 @@ var preloader = {
 	},
 	update: function(percent) {
 	  percent = percent && percent > 1 ? percent : 1;
-	  $('.preloader .bar').css('width', percent + '%');
+	  jQuery('.preloader .bar').css('width', percent + '%');
 	  if (percent == 100) {
-	    $(document).trigger('dog.preloader_complete');
+	    jQuery(document).trigger('dog.preloader_complete');
 	  }
 	},
   hide: function() {
-    $('body').removeClass('preloading');
+    jQuery('body').removeClass('preloading');
     if (!this.app_loaded) {
       this.app_loaded = true;
     }
   }
 };
 
-$(document).on('dog.preloader_complete', function() {
+jQuery(document).on('dog.preloader_complete', function() {
   preloader.hide();
 });
 
@@ -87,19 +87,28 @@ function _fontsReady() {
   preloader.complete('fonts');
 }
 
+function hasWebFonts(fontConfig) {
+  if (fontConfig.google.families.length || fontConfig.custom.families.length) {
+    return true;
+  }
+  return false;
+}
+
 function preloaderStart(fontConfig, extra_items) {
+  preloader.register('page');
 	preloader.timeout = setTimeout(function(){
 		preloader.completeAll();
 		clearTimeout(preloader.timeout);
 	}, preloader.delay);
-	preloader.register('page');
-	preloader.register('fonts');
 	if (extra_items) {
 		for (i in extra_items) {
 			preloader.register(extra_items[i]);
 		}
 	}
-	WebFont.load(fontConfig);
+  if (hasWebFonts(fontConfig)) {
+    preloader.register('fonts');
+    WebFont.load(fontConfig);
+  }
 }
 
 function _preloaderRegisterImages(count) {
@@ -113,7 +122,7 @@ function preloadImages() {
   preloader.images_registered = false;
   preloader.images_loaded = 0;
   preloader.register('images');
-  $('body').imagesLoaded({ background: '.has-bg-img' }, function() {
+  jQuery('body').imagesLoaded({ background: '.has-bg-img' }, function() {
   	preloader.complete('images');
   }).progress(function(instance, image) {
   	if (!preloader.images_registered) {
@@ -145,19 +154,19 @@ function stringToKey(value, prefix, suffix) {
 
 function hideFormErrors(error_selector) {
   error_selector = error_selector ? error_selector : '.form-error';
-	$(error_selector).hide();
+	jQuery(error_selector).hide();
 }
 
 function isScreen(breakpoint) {
-	return $('.device-' + breakpoint).is(':visible')
+	return jQuery('.device-' + breakpoint).is(':visible')
 }
 
 function isPage(selector) {
-	return $('body').is(selector);
+	return jQuery('body').is(selector);
 }
 
 function pageScrollTo(target, options, callback) {
-  $(window).scrollTo(target, options, callback);
+  jQuery(window).scrollTo(target, options, callback);
 }
 
 function themeUrl(path) {
@@ -177,33 +186,63 @@ function getNonce(key) {
 }
 
 function ajaxInit() {
-  $.ajaxSetup({
+  jQuery.ajaxSetup({
     url: dog__wp.ajax_url,
     method: 'POST'
   });
 }
 
-function ajaxDefaults() {
+function ajaxDefaultData() {
   return {
     action: dog__wp.DOG__WP_ACTION_AJAX_CALLBACK
   };
 }
 
-function ajaxPrepareData(data) {
-  return $.extend(data, ajaxDefaults());
+function ajaxPrepareData(data, nonce) {
+  data = jQuery.extend(ajaxDefaultData(), data);
+  if (nonce) {
+    var nonce_key = dog__wp.DOG__NONCE_NAME;
+    data[nonce_key] = nonce;
+  }
+  return data;
+}
+
+function validateResponseNonce(response, match) {
+  var response_nonce = response[dog__wp.DOG__NONCE_NAME];
+  return response_nonce && response_nonce == match;
+}
+
+function isResponseError(response) {
+  return response.status == dog__wp.DOG__AJAX_RESPONSE_STATUS_ERROR;
+}
+
+function formToObject(form){
+  var data = {};
+  jQuery.each(jQuery(form).serializeArray(), function(n, pair) {
+    data[pair.name] = pair.value;
+  });
+  return data;
+}
+
+function inArray(needle, haystack) {
+  return jQuery.inArray(needle, haystack) !== -1;
+}
+
+function classToSelector(class_name) {
+  return '.' + class_name;
 }
 
 /***** internal functions *****/
 
 function _toggleParentClass(event) {
-  $(event.delegateTarget).toggleParentClass(event.data.css_class, event.data.parent_selector);
+  jQuery(event.delegateTarget).toggleParentClass(event.data.css_class, event.data.parent_selector);
 }
 
 /***** jQuery overrides *****/
 
-$.fn.initToggleParentClass = function(events, options) {
+jQuery.fn.initToggleParentClass = function(events, options) {
   if (events) {
-    var settings = $.extend({
+    var settings = jQuery.extend({
       css_class: 'active',
       parent_selector: null
     }, options);
@@ -212,13 +251,13 @@ $.fn.initToggleParentClass = function(events, options) {
   return this;
 }
 
-$.fn.toggleParentClass = function(css_class, parent_selector) {
+jQuery.fn.toggleParentClass = function(css_class, parent_selector) {
   $parent = parent_selector ? this.parents(parent_selector) : this.parent();
   $parent.toggleClass(css_class);
   return this;
 }
 
-$.fn.activateItem = function(index, selector, active_class) {
+jQuery.fn.activateItem = function(index, selector, active_class) {
 	index = index ? index : 0;
 	active_class = active_class ? active_class : 'active';
 	var $items = selector ? this.filter(selector) : this;
@@ -228,7 +267,7 @@ $.fn.activateItem = function(index, selector, active_class) {
   return $next;
 }
 
-$.fn.activateNextItem = function(selector, active_class) {
+jQuery.fn.activateNextItem = function(selector, active_class) {
 	active_class = active_class ? active_class : 'active';
   var $active = this.filter('.' + active_class);
  	if (!$active.size()) {
@@ -240,7 +279,7 @@ $.fn.activateNextItem = function(selector, active_class) {
   return $next;
 }
 
-$.fn.nextSibling = function(selector, reverse) {
+jQuery.fn.nextSibling = function(selector, reverse) {
   var $next = reverse ? this.prev(selector) : this.next(selector);
   if (!$next.size()) {
     var $siblings = this.siblings(selector);
@@ -249,28 +288,28 @@ $.fn.nextSibling = function(selector, reverse) {
   return $next;
 }
 
-$.fn.prevSibling = function(selector) {
+jQuery.fn.prevSibling = function(selector) {
   return this.nextSibling(selector, true);
 }
 
-$.fn.scrollTo = function(target, options, callback){
-  var settings = $.extend({
+jQuery.fn.scrollTo = function(target, options, callback){
+  var settings = jQuery.extend({
     target: target,
     easing: 'swing'
   }, options);
   settings.speed = settings.speed ? settings.speed : 600;
   settings.offset = settings.offset ? settings.offset : 0;
   this.each(function() {
-    var $scrollPane = $(this);
+    var $scrollPane = jQuery(this);
     var $animationPane = $scrollPane;
     var callback_for = null;
     var parent_top = $scrollPane.scrollTop();
     if (this == window) {
-      $animationPane = $('body, html');
+      $animationPane = jQuery('body, html');
       callback_for = 'html';
       parent_top = 0;
     }
-    var scrollTarget = (typeof settings.target == 'number') ? settings.target : $(settings.target);
+    var scrollTarget = (typeof settings.target == 'number') ? settings.target : jQuery(settings.target);
     var scrollY = (typeof scrollTarget == 'number') ? scrollTarget : scrollTarget.offset().top + parent_top - parseInt(settings.offset);
     if ($scrollPane.scrollTop() == scrollY) {
       if (typeof callback == 'function' && (!settings.single_callback || $scrollPane.is('html'))) {
@@ -279,24 +318,24 @@ $.fn.scrollTo = function(target, options, callback){
       return;
     }
     $animationPane.animate({scrollTop: scrollY}, settings.speed, settings.easing, function() {
-      if (typeof callback == 'function' && (!$callback_for || $(this).is($callback_for))) {
+      if (typeof callback == 'function' && (!$callback_for || jQuery(this).is($callback_for))) {
         callback.call(this, scrollY, true);
       }
     });
   });
 }
 
-$.fn.random = function() {
+jQuery.fn.random = function() {
   return this.eq(Math.floor(Math.random() * this.length));
 }
 
-$.fn.removeClassWithPrefix = function(prefix) {
+jQuery.fn.removeClassWithPrefix = function(prefix) {
   return this.each(function(n, elem) {
     var all_classes = elem.className.split(/\s+/);
     for (c in all_classes) {
     	var class_name = all_classes[c];
       if (class_name.indexOf(prefix) == 0) {
-      	$(this).removeClass(class_name);
+      	jQuery(this).removeClass(class_name);
       }
     }
   });

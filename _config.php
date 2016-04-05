@@ -2,26 +2,6 @@
 
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
-$dog__schemaorg_page_types = array(
-	'AboutPage' => array('despre', 'about'),
-	'ContactPage' => array('contact', 'contact-us'),
-	'CollectionPage' => array(),
-	'ItemPage' => array(),
-	'ProfilePage' => array(),
-	'SearchResultsPage' => array()
-);
-
-$dog__contact_slugs = array(
-	dog__default_language() => 'contact',
-	'en' => 'contact-us'
-);
-
-$dog__template_override = array(
-	'page-contact' => array('contact-us')
-);
-
-$dog__output_cache_ignore_uri = array('/wp-cron.php');
-
 define('DOG__ENV', 'development');
 define('DOG__NONCE_ACTION_BASE', dog__hash('0#lugTOv[qAkI;%;8<c}Wwi-+*qzhy]cXHKVZ#}-[9+H6!-|UzE]IBYc@[ -]aDT'));
 define('DOG__NONCE_NAME', dog__hash('&Uh`{r3g1DbW2md5UMz!~#G-_g6cU|4h%[;7yrb?vi$dS4mlI7q+~Gn>7M%M<dS4'));
@@ -34,6 +14,7 @@ define('DOG__URI_TEMPLATE_PAGE', '/${slug}/');
 define('DOG__URI_TEMPLATE_CONTACT', DOG__URI_TEMPLATE_PAGE);
 define('DOG__NAMESPACE_CONTACT', 'contact');
 define('DOG__TIMEZONE', 'Europe/Bucharest');
+define('DOG__ADMIN_DIR', 'admin');
 /**********************************************/
 define('DOG__FIELD_ERROR_REQUIRED', 'required');
 define('DOG__FIELD_ERROR_REGEX', 'regex');
@@ -59,41 +40,50 @@ define('DOG__AJAX_RESPONSE_STATUS_SUCCESS', dog__hash('ajaxresponseok'));
 define('DOG__AJAX_RESPONSE_STATUS_ERROR', dog__hash('ajaxresponseerror'));
 define('DOG__AJAX_RESPONSE_CODE_INVALID_NONCE', 1001);
 define('DOG__AJAX_RESPONSE_CODE_INVALID_METHOD', 1002);
+define('DOG__AJAX_RESPONSE_CODE_INVALID_FORM', 1003);
+define('DOG__AJAX_RESPONSE_CODE_INVALID_PARAM', 1004);
+define('DOG__ALERT_KEY_RESPONSE_ERROR', 'response_error');
+define('DOG__ALERT_KEY_SERVER_FAILURE', 'server_failure');
+define('DOG__ALERT_KEY_CLIENT_FAILURE', 'client_failure');
+define('DOG__ALERT_KEY_FORM_INVALID', 'form_invalid');
+define('DOG__ALERT_KEY_EMPTY_SELECTION', 'empty_selection');
 /**********************************************/
-define('DOG_ADMIN__DIR', 'admin');
 define('DOG_ADMIN__MENU_SLUG', 'dog-theme-options');
+define('DOG_ADMIN__MENU_HOOK', 'toplevel_page_' . DOG_ADMIN__MENU_SLUG);
 define('DOG_ADMIN__NAMESPACE_CACHE_SETTINGS', 'cache_settings');
-define('DOG_ADMIN__WP_ACTION_AJAX_CALLBACK', 'dog_admin__ajax');
 define('DOG_ADMIN__SECTION_FILE_PREFIX', 'section-');
-define('DOG_ADMIN__MESSAGE_CODE_PLACEHOLDER', '{$code}');
-define('DOG_ADMIN__CONTROL_CLASS_AFTER_NONCE_MISMATCH', 'nonce_mismatch');
 define('DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED', 'output_cache_enabled');
 define('DOG_ADMIN__OPTION_OUTPUT_CACHE_EXPIRES', 'output_cache_expires');
 define('DOG_ADMIN__CACHE_EXPIRATION_HOURS_DEFAULT', 24);
 define('DOG_ADMIN__TRANSIENT_DB_PREFIX', '_transient_');
 define('DOG_ADMIN__TRANSIENT_TIMEOUT_DB_PREFIX', DOG_ADMIN__TRANSIENT_DB_PREFIX . 'timeout_');
-define('DOG_ADMIN__SECTION_ACTION_GENERATE_LABELS', 'dog_admin__generate_labels');
-define('DOG_ADMIN__SECTION_ACTION_CACHE_SETTINGS', 'dog_admin__cache_settings');
-define('DOG_ADMIN__SECTION_ACTION_CACHE_OUTPUT', 'dog_admin__cache_output');
-define('DOG_ADMIN__SECTION_ACTION_CACHE_OUTPUT_DELETE', 'dog_admin__cache_output_delete');
-define('DOG_ADMIN__SECTION_ACTION_EXPIRED_TRANSIENTS', 'dog_admin__expired_transients');
-define('DOG_ADMIN__AJAX_RESPONSE_STATUS_SUCCESS', dog__hash('ajaxresponseok'));
-define('DOG_ADMIN__AJAX_RESPONSE_STATUS_ERROR', dog__hash('ajaxresponseerror'));
-define('DOG_ADMIN__AJAX_RESPONSE_KEY_SUCCESS', 'success');
-define('DOG_ADMIN__AJAX_RESPONSE_KEY_SUCCESS2', 'success2');
-define('DOG_ADMIN__AJAX_RESPONSE_KEY_AJAX', 'ajax');
-define('DOG_ADMIN__AJAX_RESPONSE_KEY_FAILURE', 'failure');
-define('DOG_ADMIN__AJAX_RESPONSE_KEY_FORM', 'form');
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_SUCCESS', 1);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_AJAX', 999);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_FAILURE', 1000);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_INVALID_NONCE', 1001);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_INVALID_METHOD', 1002);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_INVALID_FORM', 1003);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_MISMATCH_NONCE', 1004);
-define('DOG_ADMIN__AJAX_RESPONSE_CODE_MISSING_PARAM', 1005);
+define('DOG_ADMIN__SECTION_GENERATE_LABELS', 'generate-labels');
+define('DOG_ADMIN__SECTION_CACHE_SETTINGS', 'cache-settings');
+define('DOG_ADMIN__SECTION_CACHE_OUTPUT', 'cache-output');
+define('DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS', 'expired-transients');
+define('DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE', 'cache-output-delete');
 
-$dog__form_field_types = array(
+$dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
+	'AboutPage' => array('despre', 'about'),
+	'ContactPage' => array('contact', 'contact-us'),
+	'CollectionPage' => array(),
+	'ItemPage' => array(),
+	'ProfilePage' => array(),
+	'SearchResultsPage' => array()
+));
+
+$dog__contact_slugs = dog__extend_with('contact_slugs', array(
+	dog__default_language() => 'contact',
+	'en' => 'contact-us'
+));
+
+$dog__template_override = dog__extend_with('template_override', array(
+	'page-contact' => array('contact-us')
+));
+
+$dog__output_cache_ignore_uri = dog__extend_with('output_cache_ignore_uri', array('/wp-cron.php'));
+
+$dog__form_field_types = dog__extend_with('form_field_types', array(
 	DOG__NAMESPACE_CONTACT => array(
 		'nume' => DOG__POST_FIELD_TYPE_TEXT,
 		'email' => DOG__POST_FIELD_TYPE_EMAIL,
@@ -103,14 +93,24 @@ $dog__form_field_types = array(
 		DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED => DOG__POST_FIELD_TYPE_NATURAL,
 		DOG_ADMIN__OPTION_OUTPUT_CACHE_EXPIRES => DOG__POST_FIELD_TYPE_NATURAL
 	)
-);
+));
 
-$dog_admin__sections = array(
-	DOG_ADMIN__SECTION_ACTION_GENERATE_LABELS => null,
-	DOG_ADMIN__SECTION_ACTION_CACHE_SETTINGS => null,
-	DOG_ADMIN__SECTION_ACTION_CACHE_OUTPUT => array(
-		DOG_ADMIN__SECTION_ACTION_CACHE_OUTPUT => null,
-		DOG_ADMIN__SECTION_ACTION_CACHE_OUTPUT_DELETE => null
-	),
-	DOG_ADMIN__SECTION_ACTION_EXPIRED_TRANSIENTS => null
-);
+$dog_admin__sections = dog__extend_with('admin_sections', array(
+	DOG_ADMIN__SECTION_GENERATE_LABELS,
+	DOG_ADMIN__SECTION_CACHE_SETTINGS,
+	DOG_ADMIN__SECTION_CACHE_OUTPUT,
+	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS,
+));
+
+$dog_admin__custom_nonces = dog__extend_with('admin_custom_nonces', array(
+	DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE
+));
+
+$dog__alert_messages = dog__extend_with('alert_messages', array(
+	DOG__ALERT_KEY_RESPONSE_ERROR => __('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat. Codul de eroare este ${code}'),
+	DOG__ALERT_KEY_SERVER_FAILURE => __('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
+	DOG__ALERT_KEY_CLIENT_FAILURE => __('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
+	DOG__ALERT_KEY_FORM_INVALID => __('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
+	DOG__ALERT_KEY_EMPTY_SELECTION => __('Acțiunea nu poate fi finalizată. Selectează cel puțin o înregistrare'),
+	'labels_generated' => __('Etichetele au fost generate') . '. <a href="/wp-admin/options-general.php?page=mlang&tab=strings">' . __('Click aici pentru a modifica') . '</a>',
+));

@@ -12,14 +12,14 @@
 
 .dog-admin--box > h3 {
 	font-size: 14px;
-    padding: 8px 15px;
-    margin: 0;
-    line-height: 1.4;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    position: relative;
+  padding: 8px 15px;
+  margin: 0;
+  line-height: 1.4;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  position: relative;
 }
 
 .dog-admin--box > h3::after {
@@ -27,22 +27,22 @@
 	right: 0;
 	top: 0;
 	font: 400 20px/1 dashicons;
-    padding: 8px 10px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-decoration: none!important;
-    content: '\f140';
+  padding: 8px 10px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-decoration: none!important;
+  content: '\f140';
 }
 
 .dog-admin--section.expanded .dog-admin--box > h3 {
-    border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eee;
 }
 
 .dog-admin--section.expanded .dog-admin--box > h3::after {
-    content: '\f142';
+  content: '\f142';
 }
 
-.dog-admin--ajax-target.loading {
+.dog-admin--section.loading .dog-admin--ajax-target {
 	min-height: 32px;
 	background-image: url('images/loader.gif');
 	background-repeat: no-repeat;
@@ -51,13 +51,13 @@
 
 .dog-admin--box-content {
 	padding: 8px 15px;
-    line-height: 1.4em;
-    font-size: 13px;
-    display: none;
+  line-height: 1.4em;
+  font-size: 13px;
+  display: none;
 }
 
 .dog-admin--section.expanded .dog-admin--box-content {
-    display: block;
+  display: block;
 }
 
 .dog-admin--box-content pre {
@@ -89,17 +89,17 @@
 
 .dog-admin--message {
 	background: #fff;
-    border-left: 4px solid #7ad03a;
-    -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
-    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+  border-left: 4px solid #7ad03a;
+  -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+  box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
 	margin: 0 0 8px 0;
-    padding: 1px 12px;
-    position: relative;
+  padding: 1px 12px;
+  position: relative;
 }
 
 .dog-admin--message p {
 	margin: .5em 0;
-    padding: 2px;
+  padding: 2px;
 }
 
 .dog-admin--error {
@@ -107,40 +107,25 @@
 }
 
 .dog-admin--message .notice-dismiss:before {
-    background: 0 0;
-    color: #b4b9be;
-    content: '\f153';
-    display: block;
-    font: 400 16px/20px dashicons;
-    speak: none;
-    height: 20px;
-    text-align: center;
-    width: 20px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-.wp-core-ui .button.dog-admin--control,
-.wp-core-ui .button-primary.dog-admin--control,
-.wp-core-ui .button-secondary.dog-admin--control {
-	display: none;
-}
-
-.wp-core-ui .button.dog-admin--control.after-default,
-.wp-core-ui .button-primary.dog-admin--control.after-default,
-.wp-core-ui .button-secondary.dog-admin--control.after-default,
-.wp-core-ui .button.dog-admin--control.after-all,
-.wp-core-ui .button-primary.dog-admin--control.after-all,
-.wp-core-ui .button-secondary.dog-admin--control.after-all {
-	display: inline-block;
+  background: 0 0;
+  color: #b4b9be;
+  content: '\f153';
+  display: block;
+  font: 400 16px/20px dashicons;
+  speak: none;
+  height: 20px;
+  text-align: center;
+  width: 20px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .wp-core-ui .button.dog-admin--control.button-warning {
 	background: #f0ad4e;
-    border-color: #d78d15;
-    color: #fff;
-    -webkit-box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
-    box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
+  border-color: #d78d15;
+  color: #fff;
+  -webkit-box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
+  box-shadow: inset 0 1px 0 rgba(251,221,173,.5),0 1px 0 rgba(0,0,0,.15);
 }
 
 .form-field input[type=text],
