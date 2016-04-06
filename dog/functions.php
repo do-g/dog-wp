@@ -809,7 +809,7 @@ function dog__enqueue_assets_low_priority() {
 
 function dog__js_vars() {
 	return array(
-		'theme_url' => get_bloginfo('template_url'),
+		'theme_url' => dog__theme_url('/'),
 		'ajax_url' => admin_url('admin-ajax.php'),
 		'DOG__NC_NAME' => DOG__NC_NAME,
 		'DOG__NC_VAR_PREFIX' => DOG__NC_VAR_PREFIX,
@@ -855,8 +855,6 @@ function dog__theme_setup() {
 	add_theme_support('post-thumbnails');
 	add_theme_support('custom-header');
 	add_editor_style('css/editor-styles.css');
-	register_nav_menu('location-main-menu', __('Locație Meniu Principal'));
-	dog__call_x_function('add_custom_image_sizes');
 	add_filter('image_size_names_choose', 'dog__custom_image_sizes');
 	dog__call_x_function(__FUNCTION__);
 }
