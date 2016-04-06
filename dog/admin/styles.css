@@ -22,16 +22,25 @@
   position: relative;
 }
 
+.dog-admin--refresh,
 .dog-admin--box > h3::after {
 	position: absolute;
 	right: 0;
-	top: 0;
 	font: 400 20px/1 dashicons;
-  padding: 8px 10px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-decoration: none!important;
-  content: '\f140';
+  cursor: pointer;
+}
+
+.dog-admin--box > h3::after {
+	top: 0;
+	content: '\f140';
+	padding: 8px 10px;
+}
+
+.dog-admin--refresh {
+	bottom: 0;
 }
 
 .dog-admin--section.expanded .dog-admin--box > h3 {
@@ -64,6 +73,8 @@
 	padding: 20px;
 	background: #32373c;
 	color: #b4b9be;
+	max-height: 370px;
+	overflow-y: auto;
 }
 
 .dog-admin--box-content pre table {
@@ -80,6 +91,11 @@
 
 .dog-admin--box-content pre a {
 	text-decoration: none;
+	color: #0e9bdf;
+}
+
+.dog-admin--controls {
+	position: relative;
 }
 
 .dog-admin--hidden,
@@ -180,16 +196,32 @@
 	margin: 0 0 0 30px;
 }
 
-#form-dog_admin__cache_settings .form-label {
+.dog-admin--ajaxform .form-error {
+	color: #ff0000;
+	margin-top: 20px;
+}
+
+#dog-form-cache-settings .form-label {
 	display: inline-block;
 	width: 200px;
 }
 
-#form-dog_admin__cache_settings .form-label-input-radio {
+#dog-form-cache-settings .form-label-input-radio {
 	width: auto;
 	margin: 0 21px 0 0;
 }
 
-#form-dog_admin__cache_settings .form-element-input-number {
+#dog-form-cache-settings .form-element-input-number {
 	width: 80px;
+}
+
+#toplevel_page_dog-theme-options ul li.wp-first-item {
+	display: none;
+}
+
+#dog-form-cache-output {
+	margin: 0;
+	padding: 0;
+	height: auto;
+	min-height: 0;
 }

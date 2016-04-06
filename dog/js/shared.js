@@ -178,11 +178,15 @@ function imageUrl(name) {
 }
 
 function nonceVarKey(name) {
-  return stringToKey(name, dog__wp.DOG__NONCE_VAR_PREFIX);
+  return stringToKey(name, dog__wp.DOG__NC_VAR_PREFIX);
 }
 
 function getNonce(key) {
   return dog__wp[nonceVarKey(key)];
+}
+
+function getNonceName() {
+  return dog__wp.DOG__NC_NAME;
 }
 
 function ajaxInit() {
@@ -201,14 +205,13 @@ function ajaxDefaultData() {
 function ajaxPrepareData(data, nonce) {
   data = jQuery.extend(ajaxDefaultData(), data);
   if (nonce) {
-    var nonce_key = dog__wp.DOG__NONCE_NAME;
-    data[nonce_key] = nonce;
+    data[getNonceName()] = nonce;
   }
   return data;
 }
 
 function validateResponseNonce(response, match) {
-  var response_nonce = response[dog__wp.DOG__NONCE_NAME];
+  var response_nonce = response[getNonceName()];
   return response_nonce && response_nonce == match;
 }
 
@@ -222,6 +225,20 @@ function formToObject(form){
     data[pair.name] = pair.value;
   });
   return data;
+}
+
+function formValidateNotEmpty(data) {
+  var ignore = [dog__wp.DOG__NC_NAME, dog__wp.DOG__HP_JAR_NAME, dog__wp.DOG__HP_TIMER_NAME, '_wp_http_referer'];
+  var valid = false;
+  for (var key in data) {
+    if (inArray(key, ignore)) {
+      continue;
+    }
+    if (data[key]) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function inArray(needle, haystack) {

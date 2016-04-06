@@ -11,11 +11,12 @@
 <body class="<?= dog__body_class(array('preloading')) ?>" itemscope itemtype="http://schema.org/<?= dog__schema_page_type() ?>">
 	<meta itemprop="inLanguage" content="<?= dog__active_language() ?>">
 	<?php get_template_part('_preloader') ?>
-	<header class="page-header">
-		<a href="<?= esc_url(home_url('/')) ?>" id="logo">
-			<img src="<?= dog__img_url('logo.png') ?>" />
-			<span><?= dog__txt('Bine ați venit') ?></span>
-		</a>
-		<?php wp_nav_menu(array('theme_location' => 'location-main-menu', 'menu_class' => 'main-menu', 'container' => false)) ?>
-	</header>
-	<main itemprop="mainContentOfPage" class="page-main">
+	<section class="page-wrapper">
+		<header class="page-header">
+			<a href="<?= esc_url(home_url('/')) ?>" id="logo">
+				<img src="<?= dog__img_url('logo.png') ?>" />
+				<span><?= dog__txt('Bine ați venit') ?></span>
+			</a>
+			<?php wp_nav_menu(array('theme_location' => 'location-main-menu', 'menu_class' => 'main-menu', 'container' => false)) ?>
+		</header>
+		<main itemprop="mainContentOfPage" class="page-main">

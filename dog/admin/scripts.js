@@ -3,7 +3,6 @@ var dog_admin__section_selector = '.dog-admin--section';
 var dog_admin__ajax_target_selector = '.dog-admin--ajax-target';
 var dog_admin__control_selector = '.dog-admin--control';
 var dog_admin__alert_message_selector = '.dog-admin--message';
-var dog_admin__reload_button_selector = '.button-warning';
 var dog_admin__alert_error_class = 'dog-admin--error';
 var dog_admin__hidden_class = 'dog-admin--hidden';
 var DOG_ADMIN__CSS_CLASS_LOADING = 'loading';
@@ -35,11 +34,19 @@ function dog_admin__parent_section(obj) {
 	return jQuery(obj).is(dog_admin__section_selector) ? jQuery(obj) : jQuery(obj).parents(dog_admin__section_selector);
 }
 
+function dog_admin__section_form(obj) {
+	var $section = dog_admin__parent_section(obj);
+	return $section.find('form');
+}
+
 function dog_admin__ajax_target($section) {
 	return $section.find(dog_admin__ajax_target_selector);
 }
 
 function dog_admin__show_message($section, message, is_error) {
+	if (!message) {
+		return;
+	}
 	var $alert = $section.find(dog_admin__alert_message_selector);
 	$alert.find('p').html(message);
 	if (is_error) {
@@ -83,24 +90,15 @@ function dog_admin__empty_ajax_target(obj) {
 	$section.find(dog_admin__ajax_target_selector).empty();
 }
 
-function dog_admin__refresh_section(obj, method) {
-	var $section = dog_admin__parent_section(obj);
-	if (method) {
-
-	} else {
-		dog_admin__empty_ajax_target($section);
-	}
-}
-
 function dog_admin__prepare_request_data(data) {
-	return ajaxPrepareData(data, getNonce(data.method));
+	var set_nonce = data[getNonceName()] ? data[getNonceName()] : getNonce(data.method);
+	return ajaxPrepareData(data, set_nonce);
 }
 
 function dog_admin__before_request($section) {
 	dog_admin__hide_message($section);
 	dog_admin__empty_ajax_target($section);
 	dog_admin__disable_controls($section);
-	dog_admin__hide_controls($section, dog_admin__reload_button_selector);
 	$section.addClass(DOG_ADMIN__CSS_CLASS_LOADING);
 }
 
@@ -122,70 +120,92 @@ function dog_admin__request(obj, data, options, callback) {
 		dog_admin__process_response(response, $section, $target, options, callback);
 	}).fail(function(jqXHR, textStatus, errorThrown) {
 		dog_admin__show_message($section, dog__wp.DOG__ALERT_KEY_CLIENT_FAILURE, true);
-		dog_admin__show_controls($section, dog_admin__reload_button_selector);
 	}).always(function(data_jqXHR, textStatus, jqXHR_errorThrown) {
 		dog_admin__enable_controls($section);
 		$section.removeClass(DOG_ADMIN__CSS_CLASS_LOADING);
 	});
 }
 
-function dog_admin__submit(obj, method, params, extra_options, target) {
-	var form = dog_admin__get_section_form(obj);
-	var data = jQuery.extend(dog_admin__form_to_object(form), params);
-	extra_options = extra_options ? extra_options : {};
-	if (extra_options.validate_not_empty && !dog_admin__form_validate_not_empty(data)) {
-		dog_admin__show_message(obj, DOG_ADMIN__AJAX_RESPONSE_KEY_NOSELECTION);
-		return;
-	}
-	extra_options[DOG_ADMIN__AJAX_OPTION_KEY_LOAD_RESPONSE_DATA_ON_ERROR] = true;
-	dog_admin__request(obj, method, data, extra_options, target);
+function dog_admin__submit(obj, data, options, callback) {
+	var form = dog_admin__section_form(obj);
+	var form_data = formToObject(form);
+	data = jQuery.extend(form_data, data);
+	dog_admin__request(obj, data, options, callback);
 }
 
 function dog_admin__process_response(response, $section, $target, options, callback) {
-	if (!validateResponseNonce(response, options.data[dog__wp.DOG__NONCE_NAME])) {
+	if (!validateResponseNonce(response, options.data[getNonceName()])) {
 		dog_admin__show_message($section, dog__wp.DOG__ALERT_KEY_SERVER_FAILURE, true);
 	} else {
 		var is_error = isResponseError(response);
 		if (callback) {
-			callbacks(response, options, is_error);
+			callback(response, options, is_error);
 		}
 		dog_admin__show_message($section, response.message, is_error);
 		$target.html(response.data);
 		if (is_error) {
 			dog_admin__init_form_errors($section);
-			dog_admin__show_controls($section, dog_admin__reload_button_selector);
 		}
 	}
 }
 
-function dog_admin__form_validate_not_empty(data) {
-	var valid = false;
-	for (var i in data) {
-		if (data[i]) {
-			return true;
-		}
+/***** SECTION METHODS *****/
+
+function dog_admin__section_cache_output(obj, method, options) {
+	var $section = dog_admin__parent_section(obj);
+	var $form = dog_admin__section_form($section);
+	var form_data = formToObject($form);
+	if (!formValidateNotEmpty(form_data)) {
+		dog_admin__show_message($section, dog__wp.DOG__ALERT_KEY_EMPTY_SELECTION, true);
+	} else {
+		form_data = jQuery.extend({method: method}, form_data);
+		dog_admin__submit(obj, form_data, options);
 	}
-	return false;
 }
 
-function dog_admin__get_section_form(obj) {
-	var parent = dog_admin__parent_section(obj);
-	return jQuery(parent).find('form')[0];
+function dog_admin__section_update(obj, method) {
+	dog_admin__request(obj, {method: method}, null, function(response, options, is_error){
+		var $section = dog_admin__parent_section(obj);
+		switch(stringToKey(method)) {
+			case 'update_check':
+				if (!is_error && response.updates) {
+					dog_admin__show_controls($section, '.key-update');
+				} else {
+					dog_admin__hide_controls($section, '.key-update');
+				}
+				break;
+			case 'update_info':
+				dog_admin__hide_controls($section, '.key-update');
+				break;
+			case 'update':
+				if (is_error) {
+					dog_admin__hide_controls($section, '.key-update');
+				}
+				break;
+		}
+	});
 }
+
+/***** DOM READY METHODS *****/
 
 jQuery(document).ready(function(){
-	jQuery('.dog-admin--section h3').click(function(){
-		var parent = jQuery(this).parent().parent()[0];
-		jQuery(parent).find('.dog-admin--box-content').slideToggle('fast', function(){
-			jQuery(parent).toggleClass('expanded');
-			var key = 'dog_admin__options_box__' + jQuery(parent).attr('id');
-			jQuery.cookie(key, jQuery(parent).hasClass('expanded') ? 'expanded' : 'collapsed');
+	jQuery('.dog-admin--section').each(function(){
+		var $section = jQuery(this);
+		var key = 'dog_admin__options_box__' + $section.attr('id');
+		var cls = jQuery.cookie(key) ? jQuery.cookie(key) : 'expanded';
+		$section.addClass(cls);
+		$section.find('h3').click(function(){
+			jQuery(this).siblings('.dog-admin--box-content').slideToggle('fast', function(){
+				$section.toggleClass('expanded');
+				jQuery.cookie(key, $section.hasClass('expanded') ? 'expanded' : 'collapsed');
+			});
 		});
 	});
-	jQuery('.dog-admin--section').each(function(){
-		var key = 'dog_admin__options_box__' + jQuery(this).attr('id');
-		var cls = jQuery.cookie(key) ? jQuery.cookie(key) : 'expanded';
-		jQuery(this).addClass(cls);
+	jQuery('#toplevel_page_dog-theme-options ul li a').each(function() {
+		var section_id = jQuery(this).attr('href');
+		jQuery(this).attr('href', 'javascript:void(0)').click(function(){
+			pageScrollTo('#section-' + section_id, {offset: 50});
+		});
 	});
 	ajaxInit();
 });

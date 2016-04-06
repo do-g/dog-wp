@@ -1,5 +1,5 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/../_block-direct-access.php') ?>
-<form method="post" class="dog-admin--ajaxform" id="form-<?= DOG_ADMIN__SECTION_ACTION_CACHE_SETTINGS ?>">
+<form method="post" class="dog-admin--ajaxform" id="dog-form-<?= DOG_ADMIN__SECTION_CACHE_SETTINGS ?>">
 <?php
 	dog__show_form_field(array(
 		'wrapper' => array(
@@ -9,7 +9,7 @@
 			'text' => dog__txt('Activează memoria cache')
 		)
 	));
-	$field_name = DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED;
+	$field_name = DOG__OPTION_OUTPUT_CACHE_ENABLED;
 	$value = dog__get_post_value_or_default($field_name, dog__get_option($field_name, 0));
 	dog__show_form_field(array(
 		'field' => array(
@@ -40,7 +40,7 @@
 		),
 		'errors' => array()
 	));
-	$field_name = DOG_ADMIN__OPTION_OUTPUT_CACHE_EXPIRES;
+	$field_name = DOG__OPTION_OUTPUT_CACHE_EXPIRES;
 	dog__show_form_field(array(
 		'wrapper' => array(),
 		'label' => array(
@@ -58,7 +58,8 @@
 		),
 		'errors' => array()
 	));
-	dog__nonce_field(DOG_ADMIN__SECTION_ACTION_CACHE_SETTINGS);
+	dog__nonce_field(DOG_ADMIN__SECTION_CACHE_SETTINGS);
 	dog__honeypot_field();
+	dog__render_form_errors();
 ?>
 </form>

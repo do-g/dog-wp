@@ -1,5 +1,5 @@
 <?php
-require_once(get_template_directory() . '/_block-direct-access.php');
+require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 require_once(get_template_directory() . '/_config.php');
 
 $dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
@@ -29,20 +29,27 @@ $dog__form_field_types = dog__extend_with('form_field_types', array(
 		'mesaj' => DOG__POST_FIELD_TYPE_TEXTAREA
 	),
 	DOG_ADMIN__NAMESPACE_CACHE_SETTINGS => array(
-		DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED => DOG__POST_FIELD_TYPE_NATURAL,
-		DOG_ADMIN__OPTION_OUTPUT_CACHE_EXPIRES => DOG__POST_FIELD_TYPE_NATURAL
+		DOG__OPTION_OUTPUT_CACHE_ENABLED => DOG__POST_FIELD_TYPE_NATURAL,
+		DOG__OPTION_OUTPUT_CACHE_EXPIRES => DOG__POST_FIELD_TYPE_NATURAL
 	)
 ));
 
 $dog_admin__sections = dog__extend_with('admin_sections', array(
-	DOG_ADMIN__SECTION_GENERATE_LABELS,
-	DOG_ADMIN__SECTION_CACHE_SETTINGS,
-	DOG_ADMIN__SECTION_CACHE_OUTPUT,
-	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS,
+	DOG_ADMIN__SECTION_GENERATE_LABELS => __('Etichete'),
+	DOG_ADMIN__SECTION_CACHE_SETTINGS => __('Configurare cache'),
+	DOG_ADMIN__SECTION_CACHE_OUTPUT => __('Pagini în cache'),
+	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS => __('Înregistrări expirate'),
+	DOG_ADMIN__SECTION_UPDATE => __('Actualizări temă'),
+	DOG_ADMIN__SECTION_SECURITY => __('Verificări securitate'),
 ));
 
 $dog_admin__custom_nonces = dog__extend_with('admin_custom_nonces', array(
-	DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE
+	DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE,
+	DOG_ADMIN__NONCE_UPDATE_CHECK,
+	DOG_ADMIN__NONCE_UPDATE_INFO,
+	DOG_ADMIN__NONCE_REFRESH_CACHE_SETTINGS,
+	DOG_ADMIN__NONCE_REFRESH_CACHE_OUTPUT,
+	DOG_ADMIN__NONCE_REFRESH_EXPIRED_TRANSIENTS,
 ));
 
 $dog__alert_messages = dog__extend_with('alert_messages', array(
@@ -50,12 +57,12 @@ $dog__alert_messages = dog__extend_with('alert_messages', array(
 	DOG__ALERT_KEY_SERVER_FAILURE => __('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
 	DOG__ALERT_KEY_CLIENT_FAILURE => __('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
 	DOG__ALERT_KEY_FORM_INVALID => __('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
-	DOG__ALERT_KEY_EMPTY_SELECTION => __('Acțiunea nu poate fi finalizată. Selectează cel puțin o înregistrare'),
-	'labels_generated' => __('Etichetele au fost generate') . '. <a href="/wp-admin/options-general.php?page=mlang&tab=strings">' . __('Click aici pentru a modifica') . '</a>',
+	DOG__ALERT_KEY_EMPTY_SELECTION => __('Trebuie să selectezi cel puțin o înregistrare'),
 ));
 
 $dog__form_errors = array();
 $dog__post_data = array();
+$dog__update_check_done = false;
 
 /***** utilitary methods *****/
 
@@ -89,6 +96,30 @@ function dog__debug_queries() {
 	echo "<pre>";
    	print_r($wpdb->queries);
    	echo "</pre>";
+}
+
+function dog__theme_version($theme_name = null) {
+	$theme = wp_get_theme($theme_name);
+	return $theme->get('Version');
+}
+
+function dog__parent_theme_version() {
+	return dog__theme_version(DOG__THEME_NAME);
+}
+
+function dog__string_to_html_tag($string, $tag) {
+	return "<{$tag}>{$string}</{$tag}>";
+}
+
+function dog__search_files($folder, $pattern) {
+    $dir = new RecursiveDirectoryIterator($folder);
+    $ite = new RecursiveIteratorIterator($dir);
+    $files = new RegexIterator($ite, $pattern, RegexIterator::GET_MATCH);
+    $fileList = array();
+    foreach($files as $file) {
+        $fileList = array_merge($fileList, $file);
+    }
+    return $fileList;
 }
 
 /***** url methods *****/
@@ -430,11 +461,11 @@ function dog__is_get($key = null) {
 }
 
 function dog__get_option($name, $default = null) {
-	return get_option(DOG__PREFIX_ADMIN . $name, $default);
+	return get_option(DOG__PREFIX . $name, $default);
 }
 
 function dog__update_option($name, $value, $autoload = false) {
-	return update_option(DOG__PREFIX_ADMIN . $name, $value, $autoload);
+	return update_option(DOG__PREFIX . $name, $value, $autoload);
 }
 
 function dog__redirect($location, $status = null) {
@@ -467,7 +498,7 @@ function dog__contact_uri($lang = null) {
 }
 
 function dog__whitelist_fields($allowed) {
-	$default = array('_wp_http_referer', DOG__NONCE_NAME, DOG__HONEYPOT_TIMER_NAME, DOG__HONEYPOT_JAR_NAME);
+	$default = array('_wp_http_referer', DOG__NC_NAME, DOG__HP_TIMER_NAME, DOG__HP_JAR_NAME);
 	$allowed = array_merge($allowed, $default);
 	$_POST = array_intersect_key($_POST, array_flip($allowed));
 }
@@ -506,17 +537,13 @@ function dog__get_selected_attr_value($condition) {
 	return dog__get_special_attr_value('selected', $condition);
 }
 
-function dog__get_nonce_action($action) {
-	return DOG__NONCE_ACTION_BASE . wp__hash($action);
-}
-
 function dog__nonce_field($action) {
-	wp_nonce_field(dog__get_nonce_action($action), DOG__NONCE_NAME);
+	wp_nonce_field(dog__string_to_key($action), DOG__NC_NAME);
 }
 
 function dog__validate_nonce($action, $redirect_to = null) {
-	$nonce = dog__get_post_value(DOG__NONCE_NAME);
-	if (!$nonce || !wp_verify_nonce($nonce, dog__get_nonce_action($action))) {
+	$nonce = dog__get_post_value(DOG__NC_NAME);
+	if (!$nonce || !wp_verify_nonce($nonce, dog__string_to_key($action))) {
 		if ($redirect_to) {
 			dog__set_flash_error('form', dog__txt('Eroare la validarea formularului'));
 			dog__redirect($redirect_to);
@@ -527,19 +554,19 @@ function dog__validate_nonce($action, $redirect_to = null) {
 }
 
 function dog__nonce_var_key($name) {
-	return dog__string_to_key($name, DOG__NONCE_VAR_PREFIX);
+	return dog__string_to_key($name, DOG__NC_VAR_PREFIX);
 }
 
 function dog__validate_honeypot() {
 	if (!DOG__HONEYPOT_ENABLED) {
 		return true;
 	}
-	if (dog__get_post_value(DOG__HONEYPOT_JAR_NAME)) {
+	if (dog__get_post_value(DOG__HP_JAR_NAME)) {
 		dog__set_form_error(dog__txt('Execuție suspectă sau neautorizată [1]'));
 		return;
 	}
-	$timer = dog__get_post_value(DOG__HONEYPOT_TIMER_NAME);
-	if (!$timer || microtime(true) - $timer < 2) {
+	$timer = dog__get_post_value(DOG__HP_TIMER_NAME);
+	if (!$timer || microtime(true) - $timer < DOG__HONEYPOT_TIMER_SECONDS) {
 		dog__set_form_error(dog__txt('Execuție suspectă sau neautorizată [2]'));
 	}
 }
@@ -734,14 +761,14 @@ function dog__get_uri_cache_key() {
 function dog__save_output_cache($buffer) {
 	global $dog__current_template;
 	if ($dog__current_template && !is_404()) {
-		dog__set_transient(dog__get_uri_cache_key(), $buffer, HOUR_IN_SECONDS * dog__get_option(DOG_ADMIN__OPTION_OUTPUT_CACHE_EXPIRES), array('url' => dog__current_uri(false, true)));
+		dog__set_transient(dog__get_uri_cache_key(), $buffer, HOUR_IN_SECONDS * dog__get_option(DOG__OPTION_OUTPUT_CACHE_EXPIRES), array('url' => dog__current_uri(false, true)));
 	}
 	return false;
 }
 
 function dog__check_output_cache() {
 	global $dog__output_cache_ignore_uri;
-	if (dog__is_get() && dog__get_option(DOG_ADMIN__OPTION_OUTPUT_CACHE_ENABLED)) {
+	if (dog__is_get() && dog__get_option(DOG__OPTION_OUTPUT_CACHE_ENABLED)) {
 		$cache_key = dog__get_uri_cache_key();
 		if (false === ($cache = get_transient($cache_key))) {
 			$uri = dog__current_uri(false, true);
@@ -773,11 +800,9 @@ function dog__enqueue_assets_low_priority() {
 		wp_localize_script('scripts', 'dog__wp', $js_vars);
 	} else {
 		wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
-		wp_enqueue_style('styles', dog__css_url('styles'), array('base_styles'), null);
 		wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
 		wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
 		wp_localize_script('base_scripts', 'dog__wp', $js_vars);
-		wp_enqueue_script('scripts', dog__js_url('scripts'), array('base_scripts'), null, true);
 	}
 	dog__call_x_function(__FUNCTION__);
 }
@@ -786,13 +811,16 @@ function dog__js_vars() {
 	return array(
 		'theme_url' => get_bloginfo('template_url'),
 		'ajax_url' => admin_url('admin-ajax.php'),
-		'DOG__NONCE_NAME' => DOG__NONCE_NAME,
-		'DOG__NONCE_VAR_PREFIX' => DOG__NONCE_VAR_PREFIX,
+		'DOG__NC_NAME' => DOG__NC_NAME,
+		'DOG__NC_VAR_PREFIX' => DOG__NC_VAR_PREFIX,
+		'DOG__HP_JAR_NAME' => DOG__HP_JAR_NAME,
+		'DOG__HP_TIMER_NAME' => DOG__HP_TIMER_NAME,
 		'DOG__WP_ACTION_AJAX_CALLBACK' => DOG__WP_ACTION_AJAX_CALLBACK,
 		'DOG__AJAX_RESPONSE_STATUS_SUCCESS' => DOG__AJAX_RESPONSE_STATUS_SUCCESS,
 		'DOG__AJAX_RESPONSE_STATUS_ERROR' => DOG__AJAX_RESPONSE_STATUS_ERROR,
 		'DOG__ALERT_KEY_SERVER_FAILURE' => dog__alert_message(DOG__ALERT_KEY_SERVER_FAILURE),
 		'DOG__ALERT_KEY_CLIENT_FAILURE' => dog__alert_message(DOG__ALERT_KEY_CLIENT_FAILURE),
+		'DOG__ALERT_KEY_EMPTY_SELECTION' => dog__alert_message(DOG__ALERT_KEY_EMPTY_SELECTION),
 	);
 }
 
@@ -880,15 +908,15 @@ function dog__ajax_response_ok($data, $info = array()) {
 	return dog__ajax_response($data, true, $info);
 }
 
-function dog__ajax_response_error($info = array()) {
-	return dog__ajax_response(null, false, $info);
+function dog__ajax_response_error($info = array(), $data = null) {
+	return dog__ajax_response($data, false, $info);
 }
 
 function dog__ajax_handler() {
-	$nonce_key = DOG__NONCE_NAME;
+	$nonce_key = DOG__NC_NAME;
 	$nonce = dog__get_post_value($nonce_key);
-	$method = dog__get_post_value('method');
-	$function = DOG__PREFIX_AJAX . dog__string_to_key($method);
+	$method = dog__string_to_key(dog__get_post_value('method'));
+	$function = DOG__PREFIX_AJAX . $method;
 	if (!check_ajax_referer($method, $nonce_key, false)) {
 		$response = dog__ajax_response_error(array('message' => dog__alert_message_code(DOG__ALERT_KEY_RESPONSE_ERROR, DOG__AJAX_RESPONSE_CODE_INVALID_NONCE)));
 	} else if (!$method || !function_exists($function)) {
@@ -918,6 +946,26 @@ function dog__extend_with($function_name, $default = null, $params = null) {
 	return $default;
 }
 
+function dog__register_update($updates) {
+	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
+	if ($info && $info->update && $info->version && $info->about && $info->download) {
+		$updates->response[DOG__THEME_NAME] = array(
+			'new_version' => $info->version,
+			'url' => $info->about,
+			'package' => $info->download,
+		);
+	}
+	return $updates;
+}
+
+function dog__reset_update() {
+	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
+	if ($info) {
+		$info->update = 0;
+		dog__update_option(DOG__OPTION_UPDATE_INFO, $info);
+	}
+}
+
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
 	add_filter('json_jsonp_enabled', '__return_false');
@@ -943,13 +991,16 @@ add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');
 add_action('wp_ajax_nopriv_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
 add_action('wp_ajax_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
+#add_filter('pre_set_site_transient_update_themes', 'dog__check_for_updates');
+add_filter('site_transient_update_themes', 'dog__register_update');
+add_action('delete_site_transient_update_themes', 'dog__reset_update');
 dog__call_x_function('hooks');
 
 if (is_admin()) {
-	require_once(realpath(dirname(__FILE__)) . '/admin/theme-options.php');
+	require_once(dog__parent_admin_file_path('functions.php'));
 }
 
-$dog__pll_labels_file = realpath(dirname(__FILE__)) . '/_pll_labels.php';
+$dog__pll_labels_file = dog__parent_file_path('_pll_labels.php');
 if (is_file($dog__pll_labels_file) && dog__plugin_is_active('polylang')) {
 	require_once($dog__pll_labels_file);
 }

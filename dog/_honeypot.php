@@ -5,7 +5,7 @@ dog__show_form_field(array(
 	'field' => array(
 		'tag' => 'input',
 		'type' => 'hidden',
-		'name' => DOG__HONEYPOT_TIMER_NAME,
+		'name' => DOG__HP_TIMER_NAME,
 		'value' => microtime(true),
 		'maxlength' => 50
 	)
@@ -20,7 +20,7 @@ dog__show_form_field(array(
 	'field' => array(
 		'tag' => 'input',
 		'type' => 'date',
-		'name' => DOG__HONEYPOT_JAR_NAME,
+		'name' => DOG__HP_JAR_NAME,
 		'maxlength' => 10,
 		'min' => '1997-02-29',
 		'max' => '1997-02-29'
