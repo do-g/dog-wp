@@ -13,7 +13,7 @@ function dog_admin__add_menu(){
     $admin_sections = dog_admin__get_sections();
     if ($admin_sections) {
     	foreach ($admin_sections as $name => $title) {
-    		add_submenu_page($menu_slug, $title, $title, $capability, $name);
+    		add_submenu_page($menu_slug, $title, $title, $capability, 'admin.php?page=' . $menu_slug . '#section-' . $name);
     	}
     }
 }
@@ -99,7 +99,7 @@ function dog_ajax__generate_labels() {
 	    preg_match_all("/dog__txt\('(.*?)'\)/", file_get_contents($file), $matches);
 	    $labels = array_merge($labels, $matches[1]);
 	}
-	$content = array("<?php\n", "require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');\n");
+	$content = array("<?php\n", "require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');\n");
 	foreach ($labels as $l) {
 		$key = sanitize_title($l);
 		if (!in_array($key, $keys)) {
@@ -276,7 +276,7 @@ function dog_admin__enqueue_assets($hook) {
 	wp_enqueue_script('jquery_cookie', '//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js', array('jquery'), null, true);
 	wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('jquery_cookie'), null, true);
 	$vars = dog__extend_with('admin_js_vars', dog__js_vars());
-	$nonces = dog__extend_with('admin_nonces', dog_admin__nonces());
+	$nonces = dog_admin__nonces();
 	wp_localize_script('base_scripts', 'dog__wp', array_merge($vars, $nonces));
 	wp_enqueue_script('admin_scripts', dog__parent_admin_url('scripts.js'), array('base_scripts'), null, true);
 }

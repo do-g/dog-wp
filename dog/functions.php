@@ -11,11 +11,6 @@ $dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
 	'SearchResultsPage' => array()
 ));
 
-$dog__contact_slugs = dog__extend_with('contact_slugs', array(
-	dog__default_language() => 'contact',
-	'en' => 'contact-us'
-));
-
 $dog__template_override = dog__extend_with('template_override', array(
 	'page-contact' => array('contact-us')
 ));
@@ -43,7 +38,7 @@ $dog_admin__sections = dog__extend_with('admin_sections', array(
 	DOG_ADMIN__SECTION_SECURITY => __('Verificări securitate'),
 ));
 
-$dog_admin__custom_nonces = dog__extend_with('admin_custom_nonces', array(
+$dog_admin__custom_nonces = dog__extend_with('nonces', array(
 	DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE,
 	DOG_ADMIN__NONCE_UPDATE_CHECK,
 	DOG_ADMIN__NONCE_UPDATE_INFO,
@@ -221,7 +216,7 @@ function dog__lang_url($slug_or_id, $type = 'page', $display = true) {
 	return dog__safe_url('/' . $post_name, $display);
 }
 
-function dog__showContent($template) {
+function dog__show_content($template) {
 	set_query_var('included_template', $template);
 	get_template_part('_content');
 }
@@ -491,10 +486,8 @@ function dog__current_uri($exclude_query_string = false, $trim_end_slash = false
 	return dog__uri($_SERVER['REQUEST_URI'], $exclude_query_string, $trim_end_slash);
 }
 
-function dog__contact_uri($lang = null) {
-	global $dog__contact_slugs;
-	$lang = $lang ? $lang : dog__active_language();
-	return dog__replace_template_vars(DOG__URI_TEMPLATE_CONTACT, array('slug' => $dog__contact_slugs[$lang]));
+function dog__contact_url() {
+	return dog__lang_url('contact');
 }
 
 function dog__whitelist_fields($allowed) {
@@ -674,8 +667,12 @@ function dog__post_thumbnail() {
 	return esc_url($id ? reset(wp_get_attachment_image_src($id, 'full')) : dog__img_url(DOG__POST_THUMBNAIL_DEFAULT));
 }
 
-function dog__txt($label, $lang = null) {
-	return dog__plugin_is_active('polylang') ? ($lang ? pll_translate_string($label, $lang) : pll__($label)) : $label;
+function dog__txt($label, $lang = null, $vars = null) {
+	$txt = dog__plugin_is_active('polylang') ? ($lang ? pll_translate_string($label, $lang) : pll__($label)) : $label;
+	if ($vars && is_array($vars)) {
+		$txt = dog__replace_template_vars($txt, $vars);
+	}
+	return $txt;
 }
 
 function dog__schema_page_type() {
@@ -794,15 +791,16 @@ function dog__enqueue_assets_high_priority() {
 
 function dog__enqueue_assets_low_priority() {
 	$js_vars = dog__extend_with('js_vars', dog__js_vars());
+	$nonces = dog__nonces();
 	if (dog__is_env_pro()) {
 		wp_enqueue_style('styles', dog__css_url('styles.min'), null, null);
 		wp_enqueue_script('scripts', dog__js_url('scripts.min'), null, null, true);
-		wp_localize_script('scripts', 'dog__wp', $js_vars);
+		wp_localize_script('scripts', 'dog__wp', array_merge($js_vars, $nonces));
 	} else {
 		wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
 		wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
 		wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
-		wp_localize_script('base_scripts', 'dog__wp', $js_vars);
+		wp_localize_script('base_scripts', 'dog__wp', array_merge($js_vars, $nonces));
 	}
 	dog__call_x_function(__FUNCTION__);
 }
@@ -822,6 +820,17 @@ function dog__js_vars() {
 		'DOG__ALERT_KEY_CLIENT_FAILURE' => dog__alert_message(DOG__ALERT_KEY_CLIENT_FAILURE),
 		'DOG__ALERT_KEY_EMPTY_SELECTION' => dog__alert_message(DOG__ALERT_KEY_EMPTY_SELECTION),
 	);
+}
+
+function dog__nonces() {
+	$list = dog__extend_with('nonces', array());
+	$nonces = array();
+	if ($list) {
+		foreach ($list as $n) {
+			$nonces[dog__nonce_var_key($n)] = wp_create_nonce(dog__string_to_key($n));
+		}
+	}
+	return $nonces;
 }
 
 function dog__async_defer($url) {
@@ -998,7 +1007,7 @@ if (is_admin()) {
 	require_once(dog__parent_admin_file_path('functions.php'));
 }
 
-$dog__pll_labels_file = dog__parent_file_path('_pll_labels.php');
+$dog__pll_labels_file = dog__file_path('_pll_labels.php');
 if (is_file($dog__pll_labels_file) && dog__plugin_is_active('polylang')) {
 	require_once($dog__pll_labels_file);
 }

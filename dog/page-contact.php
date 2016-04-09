@@ -3,7 +3,7 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 if (dog__is_post('contact_submit')) {
 	dog__whitelist_fields(array('nume', 'email', 'mesaj'));
 	dog__get_post_data(DOG__NAMESPACE_CONTACT);
-	dog__validate_nonce(dog__contact_uri(), dog__contact_uri());
+	dog__validate_nonce(dog__contact_url(), dog__contact_url());
 	dog__validate_honeypot();
 	dog__validate_required_fields(array('nume', 'email', 'mesaj'));
 	dog__validate_regex_field('nume', '/^[\\s\\p{L}-]+$/iu', dog__txt('Numele introdus este invalid'));
@@ -20,5 +20,5 @@ if (dog__is_post('contact_submit')) {
 	}
 }
 get_header();
-dog__showContent('_content-contact');
+dog__show_content('_content-contact');
 get_footer();

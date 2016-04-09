@@ -1,258 +1,279 @@
-/***** preloader *****/
+function dog__shared_lib() {
 
-var preloader = {
-	queue: {},
-	images_registered: false,
-	images_loaded: 0,
-	app_loaded: false,
-	timeout: null,
-	delay: 10000,
-	reset: function() {
-		this.queue = {};
-	},
-	register: function(key) {
-		this.queue[key] = false;
-	},
-	complete: function(key) {
-	  if (this.queue.hasOwnProperty(key)) {
-			this.queue[key] = true;
-			this.check();
-	  }
-	},
-	completeAll: function() {
-		for (key in this.queue) {
-			if (!this.queue[key]) {
-				console.log('failed to load key: ' + key);
-			}
-			this.queue[key] = true;
-	  }
-		this.check();
-	},
-	check: function() {
-	  var total = done = 0;
-	  for (key in this.queue) {
-	    total++;
-	    if (this.queue[key]) {
-	      done++;
-	    }
-	  }
-	  var percent = done / total * 100;
-	  this.update(percent);
-	},
-	update: function(percent) {
-	  percent = percent && percent > 1 ? percent : 1;
-	  jQuery('.preloader .bar').css('width', percent + '%');
-	  if (percent == 100) {
-	    jQuery(document).trigger('dog.preloader_complete');
-	  }
-	},
-  hide: function() {
-    jQuery('body').removeClass('preloading');
-    if (!this.app_loaded) {
-      this.app_loaded = true;
+  var self = this;
+
+  /***** webfonts *****/
+
+  this.font_loading = function (family, variation) {
+    preloader.register(preloader_font_to_key(family, variation));
+  }
+
+  this.font_ready = function (family, variation) {
+    preloader.done(preloader_font_to_key(family, variation));
+  }
+
+  this.fonts_ready = function () {
+    preloader.done('fonts');
+  }
+
+  var webfont_config = {
+    classes: false,
+    fontloading: self.font_loading,
+    fontactive: self.font_ready,
+    fontinactive: self.font_ready,
+    active: self.fonts_ready,
+    inactive: self.fonts_ready
+  };
+
+  this.set_webfonts = function (custom_fonts) {
+    jQuery.extend(webfont_config, custom_fonts);
+  }
+
+  function webfonts_registered() {
+    return webfont_config.google.families.length || webfont_config.custom.families.length;
+  }
+
+  /***** preloader *****/
+
+  var preloader = {
+  	timeout: null,
+  	wait: 10000,
+  	reset: function() {
+      clearTimeout(this.timeout);
+      this.$container = null;
+      this.queue = {};
+      this.assets = ['sessions'];
+      this.images_registered = false;
+      this.count_images_loaded = 0;
+  	},
+  	register: function(key, asset_type) {
+      if (!asset_type || this.watches(asset_type)) {
+  		  this.queue[key] = false;
+        return true;
+      }
+      return false;
+  	},
+  	done: function(key) {
+  	  if (this.queue.hasOwnProperty(key)) {
+  			this.queue[key] = true;
+  			this.check();
+        return true;
+  	  }
+      return false;
+  	},
+  	check: function() {
+  	  var total = done = 0;
+  	  for (key in this.queue) {
+  	    total++;
+  	    if (this.queue[key]) {
+  	      done++;
+  	    }
+  	  }
+  	  var percent = done / total * 100;
+  	  return this.update(percent);
+  	},
+  	update: function(percent) {
+  	  percent = percent && percent > 1 ? percent : 1;
+  	  jQuery('.preloader .bar').css('width', percent + '%');
+  	  if (percent == 100) {
+  	    jQuery(document).trigger('dog.preloader_complete');
+  	  }
+      return percent;
+  	},
+    listen: function() {
+      jQuery(document).on('dog.preloader_complete', function() {
+        preloader.complete();
+      });
+    },
+    trigger_complete: function() {
+      jQuery(document).trigger('dog.preloader_complete');
+    },
+    complete: function() {
+      jQuery('body').removeClass('preloading').addClass('ready');
+    },
+    force_complete: function() {
+      for (key in this.queue) {
+        if (!this.queue[key]) {
+          console.log('failed to load key: ' + key);
+        }
+        this.queue[key] = true;
+      }
+      this.check();
+    },
+    watch: function (list) {
+      jQuery.extend(this.assets, list);
+    },
+    watches: function(type) {
+      return self.in_array(type, this.assets);
+    }
+  };
+
+  this.preload = function (asset_types, container_selector) {
+    preloader.reset();
+    preloader.listen();
+    container_selector = container_selector ? container_selector : 'body';
+    preloader.$container = jQuery(container_selector);
+    preloader.watch(asset_types);
+    preloader.timeout = setTimeout(function(){
+      preloader.force_complete();
+    }, preloader.wait);
+    this.preloader_register('session', 'sessions');
+    if (webfonts_registered() && preloader.watches('fonts')) {
+      preloader.register('fonts');
+      WebFont.load(webfont_config);
     }
   }
-};
 
-jQuery(document).on('dog.preloader_complete', function() {
-  preloader.hide();
-});
-
-var webfont_config = {
-  classes: false,
-  _fontLoading: _fontLoading,
-  fontactive: _fontReady,
-  fontinactive: _fontReady,
-  active: _fontsReady,
-  inactive: _fontsReady
-};
-
-function _preloaderImageToKey(number) {
-  return stringToKey(number, 'image');
-}
-
-function _preloaderFontToKey(family, variation) {
-  return stringToKey(family + variation, 'font');
-}
-
-function _fontLoading(family, variation) {
-  preloader.register(_preloaderFontToKey(family, variation));
-}
-
-function _fontReady(family, variation) {
-  preloader.complete(_preloaderFontToKey(family, variation));
-}
-
-function _fontsReady() {
-  preloader.complete('fonts');
-}
-
-function hasWebFonts(fontConfig) {
-  if (fontConfig.google.families.length || fontConfig.custom.families.length) {
+  this.preload_images = function () {
+    if (!preloader.watches('images')) {
+      return false;
+    }
+    preloader.images_registered = false;
+    preloader.count_images_loaded = 0;
+    preloader.register('images');
+    preloader.$container.imagesLoaded({ background: '.has-bg-img' }, function() {
+      preloader.done('images');
+    }).progress(function(instance, image) {
+      if (!preloader.images_registered) {
+        preloader_register_images(instance.images.length);
+      }
+      preloader.count_images_loaded++;
+      preloader.done(preloader_image_to_key(preloader.count_images_loaded));
+    });
     return true;
   }
-  return false;
-}
 
-function preloaderStart(fontConfig, extra_items) {
-  preloader.register('page');
-	preloader.timeout = setTimeout(function(){
-		preloader.completeAll();
-		clearTimeout(preloader.timeout);
-	}, preloader.delay);
-	if (extra_items) {
-		for (i in extra_items) {
-			preloader.register(extra_items[i]);
-		}
-	}
-  if (hasWebFonts(fontConfig)) {
-    preloader.register('fonts');
-    WebFont.load(fontConfig);
+  this.preloader_register = function(key, asset_type) {
+    return preloader.register(key, asset_type);
   }
-}
 
-function _preloaderRegisterImages(count) {
-  preloader.images_registered = true;
-  for (n = 1; n <= count; n++) {
-    preloader.register(_preloaderImageToKey(n));
+  this.preloader_done = function(key) {
+    return preloader.done(key);
   }
-}
 
-function preloadImages() {
-  preloader.images_registered = false;
-  preloader.images_loaded = 0;
-  preloader.register('images');
-  jQuery('body').imagesLoaded({ background: '.has-bg-img' }, function() {
-  	preloader.complete('images');
-  }).progress(function(instance, image) {
-  	if (!preloader.images_registered) {
-    	_preloaderRegisterImages(instance.images.length);
-  	}
-    preloader.images_loaded++;
-    preloader.complete(_preloaderImageToKey(preloader.images_loaded));
-  });
-}
-
-function preloadPage() {
-  if (preloader.app_loaded) {
-  	preloader.reset();
-    preloader.register('page');
+  function preloader_image_to_key(number) {
+    return self.string_to_key(number, 'image');
   }
-  preloadImages();
-}
 
-/***** usefull functions *****/
-
-function stringToKey(value, prefix, suffix) {
-  value += '';
-  value = value.toLowerCase();
-  value = value.replace(/[-]+/g, '_');
-  value = value.replace(/\s+/g, '_');
-  value = value.replace(/\W+/g, '');
-  return (prefix ? prefix : '') + value + (suffix ? suffix : '');
-}
-
-function hideFormErrors(error_selector) {
-  error_selector = error_selector ? error_selector : '.form-error';
-	jQuery(error_selector).hide();
-}
-
-function isScreen(breakpoint) {
-	return jQuery('.device-' + breakpoint).is(':visible')
-}
-
-function isPage(selector) {
-	return jQuery('body').is(selector);
-}
-
-function pageScrollTo(target, options, callback) {
-  jQuery(window).scrollTo(target, options, callback);
-}
-
-function themeUrl(path) {
-	return dog__wp.theme_url + (path ? '/' + path.trimLeft('/') : '');
-}
-
-function imageUrl(name) {
-	return themeUrl('images/' + name);
-}
-
-function nonceVarKey(name) {
-  return stringToKey(name, dog__wp.DOG__NC_VAR_PREFIX);
-}
-
-function getNonce(key) {
-  return dog__wp[nonceVarKey(key)];
-}
-
-function getNonceName() {
-  return dog__wp.DOG__NC_NAME;
-}
-
-function ajaxInit() {
-  jQuery.ajaxSetup({
-    url: dog__wp.ajax_url,
-    method: 'POST'
-  });
-}
-
-function ajaxDefaultData() {
-  return {
-    action: dog__wp.DOG__WP_ACTION_AJAX_CALLBACK
-  };
-}
-
-function ajaxPrepareData(data, nonce) {
-  data = jQuery.extend(ajaxDefaultData(), data);
-  if (nonce) {
-    data[getNonceName()] = nonce;
+  function preloader_font_to_key(family, variation) {
+    return self.string_to_key(family + variation, 'font');
   }
-  return data;
-}
 
-function validateResponseNonce(response, match) {
-  var response_nonce = response[getNonceName()];
-  return response_nonce && response_nonce == match;
-}
-
-function isResponseError(response) {
-  return response.status == dog__wp.DOG__AJAX_RESPONSE_STATUS_ERROR;
-}
-
-function formToObject(form){
-  var data = {};
-  jQuery.each(jQuery(form).serializeArray(), function(n, pair) {
-    data[pair.name] = pair.value;
-  });
-  return data;
-}
-
-function formValidateNotEmpty(data) {
-  var ignore = [dog__wp.DOG__NC_NAME, dog__wp.DOG__HP_JAR_NAME, dog__wp.DOG__HP_TIMER_NAME, '_wp_http_referer'];
-  var valid = false;
-  for (var key in data) {
-    if (inArray(key, ignore)) {
-      continue;
-    }
-    if (data[key]) {
-      return true;
+  function preloader_register_images(count) {
+    preloader.images_registered = true;
+    for (n = 1; n <= count; n++) {
+      preloader.register(preloader_image_to_key(n));
     }
   }
-  return false;
-}
 
-function inArray(needle, haystack) {
-  return jQuery.inArray(needle, haystack) !== -1;
-}
+  /***** usefull functions *****/
 
-function classToSelector(class_name) {
-  return '.' + class_name;
-}
+  this.string_to_key = function (value, prefix, suffix) {
+    value += '';
+    value = value.toLowerCase();
+    value = value.replace(/[-]+/g, '_');
+    value = value.replace(/\s+/g, '_');
+    value = value.replace(/\W+/g, '');
+    return (prefix ? prefix : '') + value + (suffix ? suffix : '');
+  }
 
-/***** internal functions *****/
+  this.hide_form_errors = function (error_selector) {
+    error_selector = error_selector ? error_selector : '.form-error';
+  	jQuery(error_selector).hide();
+  }
 
-function _toggleParentClass(event) {
-  jQuery(event.delegateTarget).toggleParentClass(event.data.css_class, event.data.parent_selector);
+  this.is_screen = function (breakpoint) {
+  	return jQuery('.device-' + breakpoint).is(':visible')
+  }
+
+  this.is_page = function (selector) {
+  	return jQuery('body').is(selector);
+  }
+
+  this.page_scroll_to = function (target, options, callback) {
+    jQuery(window).scrollTo(target, options, callback);
+  }
+
+  this.theme_url = function (path) {
+  	return dog__wp.theme_url + (path ? '/' + path.trimLeft('/') : '');
+  }
+
+  this.image_url = function (name) {
+  	return this.theme_url('images/' + name);
+  }
+
+  function nonce_var_key (name) {
+    return self.string_to_key(name, dog__wp.DOG__NC_VAR_PREFIX);
+  }
+
+  this.get_nonce = function (key) {
+    return dog__wp[nonce_var_key(key)];
+  }
+
+  this.get_nonce_name = function () {
+    return dog__wp.DOG__NC_NAME;
+  }
+
+  this.ajax_init = function () {
+    jQuery.ajaxSetup({
+      url: dog__wp.ajax_url,
+      method: 'POST'
+    });
+  }
+
+  function ajax_default_data() {
+    return {
+      action: dog__wp.DOG__WP_ACTION_AJAX_CALLBACK
+    };
+  }
+
+  this.ajax_prepare_data = function (data, nonce) {
+    data = jQuery.extend(ajax_default_data(), data);
+    if (nonce) {
+      data[this.get_nonce_name()] = nonce;
+    }
+    return data;
+  }
+
+  this.validate_response_nonce = function (response, match) {
+    var response_nonce = response[this.get_nonce_name()];
+    return response_nonce && response_nonce == match;
+  }
+
+  this.is_response_error = function (response) {
+    return response.status == dog__wp.DOG__AJAX_RESPONSE_STATUS_ERROR;
+  }
+
+  this.form_to_object = function (form){
+    var data = {};
+    jQuery.each(jQuery(form).serializeArray(), function(n, pair) {
+      data[pair.name] = pair.value;
+    });
+    return data;
+  }
+
+  this.form_validate_not_empty = function (data) {
+    var ignore = [dog__wp.DOG__NC_NAME, dog__wp.DOG__HP_JAR_NAME, dog__wp.DOG__HP_TIMER_NAME, '_wp_http_referer'];
+    var valid = false;
+    for (var key in data) {
+      if (this.in_array(key, ignore)) {
+        continue;
+      }
+      if (data[key]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  this.in_array = function (needle, haystack) {
+    return jQuery.inArray(needle, haystack) !== -1;
+  }
+
+  this.class_to_selector = function (class_name) {
+    return '.' + class_name;
+  }
+
 }
 
 /***** jQuery overrides *****/
@@ -263,7 +284,9 @@ jQuery.fn.initToggleParentClass = function(events, options) {
       css_class: 'active',
       parent_selector: null
     }, options);
-    this.on(events, settings, _toggleParentClass);
+    this.on(events, settings, function(event){
+      jQuery(event.delegateTarget).toggleParentClass(event.data.css_class, event.data.parent_selector);
+    });
   }
   return this;
 }

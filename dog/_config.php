@@ -11,8 +11,6 @@ define('DOG__HONEYPOT_ENABLED', true);
 define('DOG__HP_TIMER_NAME', 'hon6c0ef5ece8c4765116c845babxgxx');
 define('DOG__HP_JAR_NAME', 'dat4c0ef5ece8c4765116c845babcea6');
 define('DOG__HONEYPOT_TIMER_SECONDS', 1);
-define('DOG__URI_TEMPLATE_PAGE', '/${slug}/');
-define('DOG__URI_TEMPLATE_CONTACT', DOG__URI_TEMPLATE_PAGE);
 define('DOG__NAMESPACE_CONTACT', 'contact');
 define('DOG__TIMEZONE', 'Europe/Bucharest');
 define('DOG__ADMIN_DIR', 'admin');
@@ -37,7 +35,7 @@ define('DOG__PREFIX_X', 'dogx__');
 define('DOG__PREFIX_AJAX', 'dog_ajax__');
 define('DOG__TRANSIENT_OUTPUT_CACHE_PREFIX', DOG__PREFIX . 'outcache');
 /**********************************************/
-define('DOG__NC_VAR_PREFIX', 'nonce__');
+define('DOG__NC_VAR_PREFIX', 'nc__');
 define('DOG__WP_ACTION_AJAX_CALLBACK', 'dog__ajax');
 define('DOG__AJAX_RESPONSE_STATUS_SUCCESS', wp_hash('ajaxresponseok'));
 define('DOG__AJAX_RESPONSE_STATUS_ERROR', wp_hash('ajaxresponseerror'));

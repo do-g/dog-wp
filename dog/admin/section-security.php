@@ -9,7 +9,7 @@
 			În cazul în care sunt detectate fișiere cu această vulnerabilitate te rugăm să iei legătura cu un programator.</p>
 			<div class="dog-admin--ajax-target"></div>
 			<p class="dog-admin--controls">
-				<input type="button" class="dog-admin--control button button-primary key-check" value="<?= __('Verifică accesul la fișiere') ?>" onclick="dog_admin__section_update(this, '<?= $section_name ?>')">
+				<input type="button" class="dog-admin--control button button-primary key-check" value="<?= __('Verifică accesul la fișiere') ?>" onclick="dog_admin__request(this, {method: '<?= $section_name ?>'})">
 				<span class="dog-admin--refresh dashicons-image-rotate" onclick="dog_admin__empty_ajax_target(this)"></span>
 			</p>
 		</div>

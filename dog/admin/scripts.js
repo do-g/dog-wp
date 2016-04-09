@@ -1,3 +1,5 @@
+var $d = new dog__shared_lib();
+
 var dog_admin__timer_messages = [];
 var dog_admin__section_selector = '.dog-admin--section';
 var dog_admin__ajax_target_selector = '.dog-admin--ajax-target';
@@ -6,9 +8,6 @@ var dog_admin__alert_message_selector = '.dog-admin--message';
 var dog_admin__alert_error_class = 'dog-admin--error';
 var dog_admin__hidden_class = 'dog-admin--hidden';
 var DOG_ADMIN__CSS_CLASS_LOADING = 'loading';
-
-var DOG_ADMIN__AJAX_OPTION_KEY_LOAD_RESPONSE_DATA_ON_ERROR = 'load_response_data_on_error';
-var DOG_ADMIN__AJAX_RESPONSE_KEY_NOSELECTION = 'noselection';
 
 /***** UTILITY METHODS *****/
 
@@ -91,8 +90,8 @@ function dog_admin__empty_ajax_target(obj) {
 }
 
 function dog_admin__prepare_request_data(data) {
-	var set_nonce = data[getNonceName()] ? data[getNonceName()] : getNonce(data.method);
-	return ajaxPrepareData(data, set_nonce);
+	var set_nonce = data[$d.get_nonce_name()] ? data[$d.get_nonce_name()] : $d.get_nonce(data.method);
+	return $d.ajax_prepare_data(data, set_nonce);
 }
 
 function dog_admin__before_request($section) {
@@ -123,21 +122,22 @@ function dog_admin__request(obj, data, options, callback) {
 	}).always(function(data_jqXHR, textStatus, jqXHR_errorThrown) {
 		dog_admin__enable_controls($section);
 		$section.removeClass(DOG_ADMIN__CSS_CLASS_LOADING);
+		$d.page_scroll_to($section, {offset: 50});
 	});
 }
 
 function dog_admin__submit(obj, data, options, callback) {
 	var form = dog_admin__section_form(obj);
-	var form_data = formToObject(form);
+	var form_data = $d.form_to_object(form);
 	data = jQuery.extend(form_data, data);
 	dog_admin__request(obj, data, options, callback);
 }
 
 function dog_admin__process_response(response, $section, $target, options, callback) {
-	if (!validateResponseNonce(response, options.data[getNonceName()])) {
+	if (!$d.validate_response_nonce(response, options.data[$d.get_nonce_name()])) {
 		dog_admin__show_message($section, dog__wp.DOG__ALERT_KEY_SERVER_FAILURE, true);
 	} else {
-		var is_error = isResponseError(response);
+		var is_error = $d.is_response_error(response);
 		if (callback) {
 			callback(response, options, is_error);
 		}
@@ -154,8 +154,8 @@ function dog_admin__process_response(response, $section, $target, options, callb
 function dog_admin__section_cache_output(obj, method, options) {
 	var $section = dog_admin__parent_section(obj);
 	var $form = dog_admin__section_form($section);
-	var form_data = formToObject($form);
-	if (!formValidateNotEmpty(form_data)) {
+	var form_data = $d.form_to_object($form);
+	if (!$d.form_validate_not_empty(form_data)) {
 		dog_admin__show_message($section, dog__wp.DOG__ALERT_KEY_EMPTY_SELECTION, true);
 	} else {
 		form_data = jQuery.extend({method: method}, form_data);
@@ -166,7 +166,7 @@ function dog_admin__section_cache_output(obj, method, options) {
 function dog_admin__section_update(obj, method) {
 	dog_admin__request(obj, {method: method}, null, function(response, options, is_error){
 		var $section = dog_admin__parent_section(obj);
-		switch(stringToKey(method)) {
+		switch($d.string_to_key(method)) {
 			case 'update_check':
 				if (!is_error && response.updates) {
 					dog_admin__show_controls($section, '.key-update');
@@ -202,10 +202,11 @@ jQuery(document).ready(function(){
 		});
 	});
 	jQuery('#toplevel_page_dog-theme-options ul li a').each(function() {
-		var section_id = jQuery(this).attr('href');
+		var href = jQuery(this).attr('href').split('#');
+		var section_id = href[1];
 		jQuery(this).attr('href', 'javascript:void(0)').click(function(){
-			pageScrollTo('#section-' + section_id, {offset: 50});
+			$d.page_scroll_to('#' + section_id, {offset: 50});
 		});
 	});
-	ajaxInit();
+	$d.ajax_init();
 });

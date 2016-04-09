@@ -1,5 +1,5 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
-<form action="<?= dog__contact_uri() ?>" method="post" class="contact-form">
+<form action="<?= dog__contact_url() ?>" method="post" class="contact-form">
 	<?php
 		dog__show_form_field(array(
 			'wrapper' => array(),
@@ -76,7 +76,7 @@
 				'value' => dog__txt('Trimite')
 			)
 		));
-		dog__nonce_field(dog__contact_uri());
+		dog__nonce_field(dog__contact_url());
 		dog__honeypot_field();
 		dog__render_form_errors();
 	?>

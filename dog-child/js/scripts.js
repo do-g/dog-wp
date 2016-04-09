@@ -1,5 +1,7 @@
-$.extend(webfont_config, {
-	google: {
+var $d = new dog__shared_lib();
+
+$d.set_webfonts({
+  google: {
     families: []
   },
   custom: {
@@ -7,14 +9,13 @@ $.extend(webfont_config, {
     testStrings: {
       'somefont': '\f078\f017'
     }
-  },
+  }
 });
 
-preloaderStart(webfont_config, []);
+$d.preload(['sessions', 'fonts', 'images']);
 
 $(document).ready(function() {
-	preloadPage();
-	$('.form-element').not('input[type=submit]').click(hideFormErrors).focus(hideFormErrors);
-	//setTimeout(hideFormErrors, 5000);
-	preloader.complete('page');
+	$d.preload_images();
+	$('.form-element').not('input[type=submit]').click($d.hide_form_errors).focus($d.hide_form_errors);
+  $d.preloader_done('session');
 });
