@@ -1,8 +1,8 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-if (isset($data['label'])) {
-	$field = $data['field'];
-	$label = $data['label'];
+if (isset($tpl_data['label'])) {
+	$field = $tpl_data['field'];
+	$label = $tpl_data['label'];
 	$text = $label['text'];
 	unset($label['text']);
 	$default_class = array("form-label", "form-label-{$field['tag']}", "form-label-{$field['tag']}-{$field['type']}", "form-label-id-{$field['id']}");

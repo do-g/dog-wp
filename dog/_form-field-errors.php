@@ -1,7 +1,7 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-$field = $data['field'];
-$errors = $data['errors'];
+$field = $tpl_data['field'];
+$errors = $tpl_data['errors'];
 if ($fld_errs = dog__get_field_errors($field['name'])) {
 	$default_class = array("form-error", "field-error", "field-error-{$field['tag']}", "field-error-{$field['tag']}-{$field['type']}", "field-error-id-{$field['id']}");
 	if (!$field['type']) {

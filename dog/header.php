@@ -10,7 +10,7 @@
 </head>
 <body class="<?= dog__body_class(array('preloading')) ?>" itemscope itemtype="http://schema.org/<?= dog__schema_page_type() ?>">
 	<meta itemprop="inLanguage" content="<?= dog__active_language() ?>">
-	<?php get_template_part('_preloader') ?>
+	<?php dog__include_template('_preloader') ?>
 	<section class="page-wrapper">
 		<header class="page-header">
 			<a href="<?= esc_url(home_url('/')) ?>" id="logo">

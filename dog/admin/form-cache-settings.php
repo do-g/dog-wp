@@ -22,7 +22,7 @@
 			'checked' => dog__get_checked_attr_value($value == 1)
 		),
 		'label' => array(
-			'text' => __('Da')
+			'text' => dog__txt('Da')
 		)
 	));
 	dog__show_form_field(array(
@@ -36,7 +36,7 @@
 			'checked' => dog__get_checked_attr_value($value == 0)
 		),
 		'label' => array(
-			'text' => __('Nu')
+			'text' => dog__txt('Nu')
 		),
 		'errors' => array()
 	));

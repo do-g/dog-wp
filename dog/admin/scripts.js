@@ -54,7 +54,12 @@ function dog_admin__show_message($section, message, is_error) {
 	$alert.find('button.notice-dismiss').click(function(){
 		dog_admin__hide_message($section);
 	});
-	$alert.fadeIn('fast');
+	$alert.fadeIn('fast', function() {
+		var offset = jQuery('#wpadminbar').height();
+		if (!$alert.fullyInViewport(null, {top: offset})) {
+			$d.page_scroll_to($alert, {offset: offset});
+		}
+	});
 	var parent_id = $section.attr('id');
 	dog_admin__timer_messages[parent_id] = setTimeout(function() {
 		dog_admin__hide_message($section);
@@ -122,7 +127,6 @@ function dog_admin__request(obj, data, options, callback) {
 	}).always(function(data_jqXHR, textStatus, jqXHR_errorThrown) {
 		dog_admin__enable_controls($section);
 		$section.removeClass(DOG_ADMIN__CSS_CLASS_LOADING);
-		$d.page_scroll_to($section, {offset: 50});
 	});
 }
 
@@ -143,6 +147,7 @@ function dog_admin__process_response(response, $section, $target, options, callb
 		}
 		dog_admin__show_message($section, response.message, is_error);
 		$target.html(response.data);
+		$target.find('pre').scrollTop(9999);
 		if (is_error) {
 			dog_admin__init_form_errors($section);
 		}

@@ -30,12 +30,12 @@ $dog__form_field_types = dog__extend_with('form_field_types', array(
 ));
 
 $dog_admin__sections = dog__extend_with('admin_sections', array(
-	DOG_ADMIN__SECTION_GENERATE_LABELS => __('Etichete'),
-	DOG_ADMIN__SECTION_CACHE_SETTINGS => __('Configurare cache'),
-	DOG_ADMIN__SECTION_CACHE_OUTPUT => __('Pagini în cache'),
-	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS => __('Înregistrări expirate'),
-	DOG_ADMIN__SECTION_UPDATE => __('Actualizări temă'),
-	DOG_ADMIN__SECTION_SECURITY => __('Verificări securitate'),
+	DOG_ADMIN__SECTION_GENERATE_LABELS => dog__txt('Etichete'),
+	DOG_ADMIN__SECTION_CACHE_SETTINGS => dog__txt('Configurare cache'),
+	DOG_ADMIN__SECTION_CACHE_OUTPUT => dog__txt('Pagini în cache'),
+	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS => dog__txt('Înregistrări expirate'),
+	DOG_ADMIN__SECTION_UPDATE => dog__txt('Actualizări temă'),
+	DOG_ADMIN__SECTION_SECURITY => dog__txt('Verificări securitate'),
 ));
 
 $dog_admin__custom_nonces = dog__extend_with('nonces', array(
@@ -48,11 +48,11 @@ $dog_admin__custom_nonces = dog__extend_with('nonces', array(
 ));
 
 $dog__alert_messages = dog__extend_with('alert_messages', array(
-	DOG__ALERT_KEY_RESPONSE_ERROR => __('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat. Codul de eroare este ${code}'),
-	DOG__ALERT_KEY_SERVER_FAILURE => __('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
-	DOG__ALERT_KEY_CLIENT_FAILURE => __('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
-	DOG__ALERT_KEY_FORM_INVALID => __('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
-	DOG__ALERT_KEY_EMPTY_SELECTION => __('Trebuie să selectezi cel puțin o înregistrare'),
+	DOG__ALERT_KEY_RESPONSE_ERROR => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat. Codul de eroare este ${code}'),
+	DOG__ALERT_KEY_SERVER_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
+	DOG__ALERT_KEY_CLIENT_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
+	DOG__ALERT_KEY_FORM_INVALID => dog__txt('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
+	DOG__ALERT_KEY_EMPTY_SELECTION => dog__txt('Trebuie să selectezi cel puțin o înregistrare'),
 ));
 
 $dog__form_errors = array();
@@ -75,15 +75,6 @@ function dog__value_or_empty($value, $condition) {
 
 function dog__safe_url($uri, $display = false) {
 	return $display ? esc_url($uri) : esc_url_raw($uri);
-}
-
-function dog__get_include_contents($filepath, $data = null) {
-    if (is_file($filepath)) {
-        ob_start();
-        include $filepath;
-        return ob_get_clean();
-    }
-    return false;
 }
 
 function dog__debug_queries() {
@@ -216,9 +207,36 @@ function dog__lang_url($slug_or_id, $type = 'page', $display = true) {
 	return dog__safe_url('/' . $post_name, $display);
 }
 
+function dog__extract_labels($string) {
+	$labels = array();
+	preg_match_all("/dog__txt\('(.*?)'/", $string, $matches1);
+	$labels = array_merge($labels, $matches1[1]);
+	preg_match_all("/dog__txt_attr\('(.*?)'/", $string, $matches2);
+	$labels = array_merge($labels, $matches2[1]);
+	preg_match_all("/dog__txt_raw\('(.*?)'/", $string, $matches3);
+	$labels = array_merge($labels, $matches3[1]);
+	return $labels;
+}
+
+function dog__extract_file_labels($filepath) {
+	return dog__extract_labels(file_get_contents($filepath));
+}
+
+function dog__include_template($filename, $tpl_data = null) {
+	include(locate_template($filename . '.php'));
+}
+
+function dog__get_include_contents($filepath, $tpl_data = null) {
+    if (is_file($filepath)) {
+        ob_start();
+        include $filepath;
+        return ob_get_clean();
+    }
+    return false;
+}
+
 function dog__show_content($template) {
-	set_query_var('included_template', $template);
-	get_template_part('_content');
+	dog__include_template('_content-loop', array('template' => $template));
 }
 
 function dog__body_class($user_classes = array()) {
@@ -304,8 +322,7 @@ function dog__strip_shortcode($code, $content) {
 }
 
 function dog__show_form_field($data) {
-	set_query_var('form_field_data', $data);
-	get_template_part('_form-field');
+	dog__include_template('_form-field', array('form_field_data' => $data));
 }
 
 function dog__attributes_array_to_html($list) {
@@ -343,7 +360,7 @@ function dog__set_form_error($message, $type = 'generic') {
 }
 
 function dog__render_form_errors() {
-	get_template_part('_form-errors');
+	dog__include_template('_form-errors');
 }
 
 function dog__form_is_valid() {
@@ -432,13 +449,13 @@ function dog__safe_post_value($key_name, $type = null) {
 	return $value;
 }
 
-function dog__get_post_value($key_name, $fresh = false, $type = null) {
+function dog__get_post_value($key_name, $type = null, $fresh = false) {
 	global $dog__post_data;
 	return $fresh ? dog__safe_post_value($key_name, $type) : ($dog__post_data[$key_name] ? $dog__post_data[$key_name] : dog__safe_post_value($key_name, $type));
 }
 
-function dog__get_post_value_or_default($key_name, $default, $default_for_blank = false, $fresh = false, $type = null) {
-	$value = dog__get_post_value($key_name, $fresh, $type);
+function dog__get_post_value_or_default($key_name, $default, $default_for_blank = false, $type = null, $fresh = false) {
+	$value = dog__get_post_value($key_name, $type, $fresh);
 	$condition = $default_for_blank ? $value : isset($value);
 	return $condition ? $value : $default;
 }
@@ -508,7 +525,7 @@ function dog__validate_regex_field($field_name, $regex, $error_message = null) {
 	if (dog__field_has_value_and_valid($field_name)) {
 		$error_message = $error_message ? $error_message : dog__txt('Valoarea introdusa este invalida');
 		if ($regex == DOG__REGEX_KEY_EMAIL) {
-			$valid = is_email(dog__get_post_value($field_name, false, DOG__POST_FIELD_TYPE_EMAIL));
+			$valid = is_email(dog__get_post_value($field_name, DOG__POST_FIELD_TYPE_EMAIL, false));
 		} else {
 			$valid = preg_match($regex, dog__get_post_value($field_name));
 		}
@@ -566,7 +583,7 @@ function dog__validate_honeypot() {
 
 function dog__honeypot_field() {
 	if (DOG__HONEYPOT_ENABLED) {
-		get_template_part('_honeypot');
+		dog__include_template('_honeypot');
 	}
 }
 
@@ -629,7 +646,7 @@ function dog__send_form_email($namespace, &$errors = array()) {
 		'From: ' . $template_data['website_title'] . ' <noreply@' . $domain . '>',
 		'Reply-To: ' . $template_data['nume'] . ' <' . $template_data['email'] . '>',
 	);
-	$result = wp_mail($to, dog__txt('Ai primit un mesaj de contact', dog__default_language()), $template, $headers);
+	$result = wp_mail($to, dog__txt('Ai primit un mesaj de contact', null, dog__default_language()), $template, $headers);
 	if (!$result) {
 		$errors = dog__get_mail_errors();
 		return false;
@@ -667,12 +684,20 @@ function dog__post_thumbnail() {
 	return esc_url($id ? reset(wp_get_attachment_image_src($id, 'full')) : dog__img_url(DOG__POST_THUMBNAIL_DEFAULT));
 }
 
-function dog__txt($label, $lang = null, $vars = null) {
+function dog__txt_raw($label, $vars = null, $lang = null) {
 	$txt = dog__plugin_is_active('polylang') ? ($lang ? pll_translate_string($label, $lang) : pll__($label)) : $label;
 	if ($vars && is_array($vars)) {
 		$txt = dog__replace_template_vars($txt, $vars);
 	}
 	return $txt;
+}
+
+function dog__txt($label, $vars = null, $lang = null) {
+	return esc_html(dog__txt_raw($label, $vars, $lang));
+}
+
+function dog__txt_attr($label, $vars = null, $lang = null) {
+	return esc_attr(dog__txt_raw($label, $vars, $lang));
 }
 
 function dog__schema_page_type() {
@@ -951,6 +976,11 @@ function dog__extend_with($function_name, $default = null, $params = null) {
 		return is_array($default) ? array_merge($default, $local_value) : $local_value;
 	}
 	return $default;
+}
+
+function dog__override_with($function_name, $default = null, $params = null) {
+	$local_value = dog__call_x_function($function_name, $params);
+	return $local_value ? $local_value : $default;
 }
 
 function dog__register_update($updates) {

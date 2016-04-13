@@ -20,5 +20,5 @@ if (dog__is_post('contact_submit')) {
 	}
 }
 get_header();
-dog__show_content('_content-contact');
+dog__include_template('_content-contact');
 get_footer();

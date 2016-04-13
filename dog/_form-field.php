@@ -1,6 +1,7 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
+$form_field_data = $tpl_data['form_field_data'];
 $form_field_data['global']['content_placeholder'] = '{$content}';
 $form_field_data['field']['id'] = $form_field_data['field']['id'] ? $form_field_data['field']['id'] : $form_field_data['field']['name'];
 

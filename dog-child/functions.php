@@ -9,6 +9,6 @@ function dogx__enqueue_assets_low_priority() {
 }
 
 function dogx__theme_setup() {
-	register_nav_menu('location-main-menu', __('Locație Meniu Principal'));
+	register_nav_menu('location-main-menu', 'Locație Meniu Principal');
 	add_image_size('small', 600, 9999);
 }

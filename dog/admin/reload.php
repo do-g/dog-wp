@@ -1,2 +1,2 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/../_block-direct-access.php') ?>
-<input type="button" class="dog-admin--control button button-warning dog-admin--hidden" value="<?= __('Reîncarcă pagina') ?>" onclick="location.reload()">
+<input type="button" class="dog-admin--control button button-warning dog-admin--hidden" value="<?= dog__txt_attr('Reîncarcă pagina') ?>" onclick="location.reload()">

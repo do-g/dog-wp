@@ -1,6 +1,6 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-$field = $data['field'];
+$field = $tpl_data['field'];
 $attributes = dog__attributes_array_to_html($field);
 ?>
-<<?= tag_escape($data['global']['tag']) ?><?= $attributes ?> />
+<<?= tag_escape($tpl_data['global']['tag']) ?><?= $attributes ?> />

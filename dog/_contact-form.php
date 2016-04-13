@@ -12,7 +12,7 @@
 				'type' => 'text',
 				'name' => 'nume',
 				'value' => dog__get_post_value('nume'),
-				'placeholder' => dog__txt('Nume'),
+				'placeholder' => dog__txt_attr('Nume'),
 				'maxlength' => 30,
 				'required' => 'required'
 			)
@@ -25,7 +25,7 @@
 				'type' => 'email',
 				'name' => 'email',
 				'value' => dog__get_post_value('email'),
-				'placeholder' => dog__txt('Adresa email'),
+				'placeholder' => dog__txt_attr('Adresa email'),
 				'maxlength' => 50,
 				'required' => 'required'
 			),
@@ -39,7 +39,7 @@
 				'type' => 'tel',
 				'name' => 'telefon',
 				'value' => dog__get_post_value('telefon'),
-				'placeholder' => dog__txt('+40 722 312 789')
+				'placeholder' => dog__txt_attr('+40 722 312 789')
 			)
 		));
 		dog__show_form_field(array(
@@ -62,7 +62,7 @@
 				'tag' => 'textarea',
 				'name' => 'mesaj',
 				'value' => dog__get_post_value('mesaj'),
-				'placeholder' => dog__txt('Mesaj'),
+				'placeholder' => dog__txt_attr('Mesaj'),
 				'required' => 'required'
 			),
 			'errors' => array()

@@ -274,9 +274,61 @@ function dog__shared_lib() {
     return '.' + class_name;
   }
 
+  this.prepare_offset = function (offset) {
+    offset = offset ? offset : {};
+    offset.top = offset.top ? offset.top : 0;
+    offset.bottom = offset.bottom ? offset.bottom : 0;
+    offset.left = offset.left ? offset.left : 0;
+    offset.right = offset.right ? offset.right : 0;
+    return offset;
+  }
+
+}
+
+/***** internal functions *****/
+
+function __inviewport_prepare_parent(parent) {
+  var $parent = parent ? jQuery(parent) : jQuery(window);
+  return {
+    height: $parent.height(),
+    width: $parent.width(),
+    top: $parent.scrollTop(),
+    left: $parent.scrollLeft()
+  };
+}
+
+function __inviewport_prepare_child($elem) {
+  return {
+    height: $elem.outerHeight(),
+    width: $elem.outerWidth(),
+    top: $elem.offset().top,
+    left: $elem.offset().left
+  };
 }
 
 /***** jQuery overrides *****/
+
+jQuery.fn.fullyInViewport = function(parent, offset) {
+  var p = __inviewport_prepare_parent(parent);
+  var c = __inviewport_prepare_child(this);
+  var o = $d.prepare_offset(offset);
+  var above_top = p.top + o.top > c.top;
+  var below_bottom = p.top + p.height - o.bottom < c.top + c.height;
+  var left_of = p.left + o.left > c.left;
+  var right_of = p.left + p.width - o.right < c.left + c.width;
+  return !above_top && !below_bottom && !left_of && !right_of;
+}
+
+jQuery.fn.partiallyInViewport = function(parent, offset) {
+  var p = __inviewport_prepare_parent(parent);
+  var c = __inviewport_prepare_child(this);
+  var o = $d.prepare_offset(offset);
+  var above_top = p.top >= c.top + c.height;
+  var below_bottom = p.top + p.height <= c.top;
+  var left_of = p.left >= c.left + c.width;
+  var right_of = p.left + p.width <= c.left;
+  return !above_top && !below_bottom && !left_of && !right_of;
+}
 
 jQuery.fn.initToggleParentClass = function(events, options) {
   if (events) {
@@ -343,16 +395,22 @@ jQuery.fn.scrollTo = function(target, options, callback){
     var $scrollPane = jQuery(this);
     var $animationPane = $scrollPane;
     var callback_for = null;
-    var parent_top = $scrollPane.scrollTop();
+    var parent_scroll_top = $scrollPane.scrollTop();
     if (this == window) {
       $animationPane = jQuery('body, html');
       callback_for = 'html';
-      parent_top = 0;
+      parent_scroll_top = 0;
     }
-    var scrollTarget = (typeof settings.target == 'number') ? settings.target : jQuery(settings.target);
-    var scrollY = (typeof scrollTarget == 'number') ? scrollTarget : scrollTarget.offset().top + parent_top - parseInt(settings.offset);
+    var scrollY;
+    if (typeof settings.target == 'number') {
+      scrollY = settings.target;
+    } else {
+      var $scrollTarget = jQuery(settings.target);
+      var position_from_top = this == window ? $scrollTarget.offset().top : $scrollTarget.position().top;
+      scrollY = position_from_top + parent_scroll_top - parseInt(settings.offset);
+    }
     if ($scrollPane.scrollTop() == scrollY) {
-      if (typeof callback == 'function' && (!settings.single_callback || $scrollPane.is('html'))) {
+      if (typeof callback == 'function' && (!$callback_for || jQuery(this).is($callback_for))) {
         callback.call(this, scrollY, false);
       }
       return;

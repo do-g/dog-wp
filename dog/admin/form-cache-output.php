@@ -5,14 +5,14 @@ $cache = dog_admin__get_output_cache();
 <form method="post" id="dog-form-<?= DOG_ADMIN__SECTION_CACHE_OUTPUT ?>">
 	<pre>
 <?php if ($cache) {
-	echo dog__replace_template_vars(__('Am găsit ${n} pagini memorate'), array('n' => count($cache))); ?>
+	echo dog__txt('Am găsit ${n} pagini memorate', array('n' => count($cache))); ?>
 	<br />
 	<table>
 		<tr>
 			<th>&nbsp;</th>
-			<th><?= __('Adresă URL') ?></th>
-			<th><?= __('Cod identificare') ?></th>
-			<th><?= __('Expiră') ?></th>
+			<th><?= dog__txt('Adresă URL') ?></th>
+			<th><?= dog__txt('Cod identificare') ?></th>
+			<th><?= dog__txt('Expiră') ?></th>
 		</tr>
 		<?php foreach ($cache as $i => $row) { ?>
 			<tr>
@@ -24,7 +24,7 @@ $cache = dog_admin__get_output_cache();
 		<?php } ?>
 	</table>
 <?php } else {
-	echo __('Nu există pagini în memoria cache');
+	echo dog__txt('Nu există pagini în memoria cache');
 } ?>
 	</pre>
 	<?php

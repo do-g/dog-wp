@@ -3,7 +3,7 @@
 require_once(realpath(dirname(__FILE__)) . '/../_block-direct-access.php');
 
 function dog_admin__add_menu(){
-	$page_title = __('Opțiuni temă');
+	$page_title = dog__txt('Opțiuni temă');
 	$menu_title = $page_title;
 	$capability = 'administrator';
 	$menu_slug = DOG_ADMIN__MENU_SLUG;
@@ -89,15 +89,33 @@ function dog_ajax__generate_labels() {
 	global $dog__pll_labels_file;
 	$labels = $keys = array();
 	$output = $dog__pll_labels_file;
+	$ignore = array('_pll_labels.php');
+	$file_names = array();
 	$child_pattern = dog__file_path('*.php');
-	foreach (glob($child_pattern) as $file) {
-	    preg_match_all("/dog__txt\('(.*?)'\)/", file_get_contents($file), $matches);
-	    $labels = array_merge($labels, $matches[1]);
-	}
+	$all_files = glob($child_pattern);
 	$parent_pattern = dog__parent_file_path('*.php');
-	foreach (glob($parent_pattern) as $file) {
-	    preg_match_all("/dog__txt\('(.*?)'\)/", file_get_contents($file), $matches);
-	    $labels = array_merge($labels, $matches[1]);
+	$all_files = array_merge($all_files, glob($parent_pattern));
+	foreach ($all_files as $file) {
+		$file_name = basename($file);
+		if (in_array($file_name, $ignore) || in_array($file_name, $file_names)) {
+			continue;
+		}
+		array_push($file_names, $file_name);
+	    $labels = array_merge($labels, dog__extract_file_labels($file));
+	}
+	$admin_labels = $admin_keys = array();
+	$file_names = array();
+	$child_admin_pattern = dog__admin_file_path('*.php');
+	$all_admin_files = glob($child_admin_pattern);
+	$parent_admin_pattern = dog__parent_admin_file_path('*.php');
+	$all_admin_files = array_merge($all_admin_files, glob($parent_admin_pattern));
+	foreach ($all_admin_files as $file) {
+		$file_name = basename($file);
+		if (in_array($file_name, $ignore) || in_array($file_name, $file_names)) {
+			continue;
+		}
+		array_push($file_names, $file_name);
+	    $admin_labels = array_merge($admin_labels, dog__extract_file_labels($file));
 	}
 	$content = array("<?php\n", "require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');\n");
 	foreach ($labels as $l) {
@@ -107,8 +125,18 @@ function dog_ajax__generate_labels() {
 			array_push($keys, $key);
 		}
 	}
+	foreach ($admin_labels as $l) {
+		$key = sanitize_title($l);
+		if (!in_array($key, $admin_keys)) {
+			array_push($content, "pll_register_string('{$key}', '{$l}', 'admin', true);\n");
+			array_push($admin_keys, $key);
+		}
+	}
 	file_put_contents($output, implode('', $content));
-	$response = '<p>' . str_replace('{$n}', count($labels), __('Am găsit următoarele etichete ({$n}):')) . '</p><pre>' . implode('<br />', $labels) . '</pre>';
+	$all_labels = array_merge($labels, $admin_labels);
+	$response = dog__txt('Am găsit următoarele etichete (${n}):', array('n' => count($all_labels)));
+	$response = dog__string_to_html_tag($response, 'p');
+	$response .= dog__string_to_html_tag(implode('<br />', $all_labels), 'pre');
 	return dog__ajax_response_ok($response);
 }
 
@@ -121,16 +149,16 @@ function dog_ajax__cache_settings() {
 	if (dog__form_is_valid()) {
 		dog__update_option(DOG__OPTION_OUTPUT_CACHE_ENABLED, dog__get_post_value(DOG__OPTION_OUTPUT_CACHE_ENABLED), false);
 		dog__update_option(DOG__OPTION_OUTPUT_CACHE_EXPIRES, dog__get_post_value(DOG__OPTION_OUTPUT_CACHE_EXPIRES), false);
-		return dog_ajax__refresh_cache_settings(array('message' => __('Configurarea memoriei cache salvată cu succes')));
+		return dog_ajax__refresh_cache_settings(array('message' => dog__txt('Configurarea memoriei cache salvată cu succes')));
 	} else {
 		$response = dog_admin__cache_settings_form();
 		return dog__ajax_response_error(array('message' => dog__alert_message(DOG__ALERT_KEY_FORM_INVALID)), $response);
 	}
 }
 
-function dog_admin__get_include_contents($filename) {
+function dog_admin__get_include_contents($filename, $tpl_data = null) {
 	$filepath = dog__parent_admin_file_path($filename);
-	return dog__get_include_contents($filepath);
+	return dog__get_include_contents($filepath, $tpl_data);
 }
 
 function dog_admin__cache_settings_form() {
@@ -148,7 +176,7 @@ function dog_admin__get_expired_transients() {
 
 function dog_admin__list_expired_transients() {
 	$expired = dog_admin__get_expired_transients();
-	$response = $expired ? dog__replace_template_vars(__('Am găsit ${n} înregistrări expirate'), array('n' => count($expired))) : __('Nu există înregistrări expirate în memoria cache');
+	$response = $expired ? dog__txt('Am găsit ${n} înregistrări expirate', array('n' => count($expired))) : dog__txt('Nu există înregistrări expirate în memoria cache');
 	return dog__string_to_html_tag($response, 'pre');
 }
 
@@ -160,7 +188,7 @@ function dog_ajax__refresh_expired_transients($extra = null) {
 function dog_ajax__expired_transients() {
 	$expired = dog_admin__get_expired_transients();
 	dog_admin__delete_transients($expired);
-    return dog_ajax__refresh_expired_transients(array('message' => __('Memoria a fost curățată de înregistrări expirate')));
+    return dog_ajax__refresh_expired_transients(array('message' => dog__txt('Memoria a fost curățată de înregistrări expirate')));
 }
 
 function dog_admin__get_output_cache() {
@@ -179,11 +207,11 @@ function dog_ajax__refresh_cache_output($extra = null) {
 function dog_ajax__cache_output() {
 	$cache = dog_admin__get_output_cache();
 	dog_admin__delete_transients($cache, DOG__TRANSIENT_OUTPUT_CACHE_PREFIX);
-    return dog_ajax__refresh_cache_output(array('message' => __('Memoria paginilor a fost golită')));
+    return dog_ajax__refresh_cache_output(array('message' => dog__txt('Memoria paginilor a fost golită')));
 }
 
 function dog_ajax__cache_output_delete() {
-	$hashes = dog__get_post_value('rid', false, DOG__POST_FIELD_TYPE_ARRAY_TEXT);
+	$hashes = dog__get_post_value('rid', DOG__POST_FIELD_TYPE_ARRAY_TEXT, false);
 	if (!$hashes) {
 		return dog__ajax_response_error(array('message' => dog__alert_message_code(DOG__ALERT_KEY_RESPONSE_ERROR, DOG__AJAX_RESPONSE_CODE_INVALID_PARAM)), $response);
 	}
@@ -191,14 +219,14 @@ function dog_ajax__cache_output_delete() {
 		$transient_name = DOG__TRANSIENT_OUTPUT_CACHE_PREFIX . $hash;
 		dog__delete_transient($transient_name, array('url'));
 	}
-	return dog_ajax__refresh_cache_output(array('message' => __('Ștergerea din memorie s-a finalizat cu succes')));
+	return dog_ajax__refresh_cache_output(array('message' => dog__txt('Ștergerea din memorie s-a finalizat cu succes')));
 }
 
 function dog_admin__update_info() {
 	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
-	$last_check = $info && $info->last_check ? $info->last_check : __('nu există');
-	$response = __('Ultima verificare: ') . $last_check . '<br />';
-	$response .= __('Versiunea instalată este: ') . dog__parent_theme_version();
+	$last_check = $info && $info->last_check ? $info->last_check : dog__txt('nu există');
+	$response = dog__txt('Ultima verificare: ${d}', array('d' => $last_check)) . '<br />';
+	$response .= dog__txt('Versiunea instalată este: ${v}', array('v' => dog__parent_theme_version()));
 	return dog__string_to_html_tag($response, 'pre');
 }
 
@@ -209,20 +237,20 @@ function dog_ajax__update_info() {
 function dog_ajax__update_check() {
 	$info = wp_remote_get(DOG__UPDATE_URL);
 	if (!is_array($info)) {
-		return dog__ajax_response_error(array('message' => __('Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat')));
+		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat')));
 	}
 	$info = json_decode($info['body']);
 	if (json_last_error() != JSON_ERROR_NONE) {
-		return dog__ajax_response_error(array('message' => __('Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat')));
+		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat')));
 	}
 	$current_version = dog__parent_theme_version();
 	$is_newer = false;
 	if (version_compare($info->version, $current_version) == 1) {
-		$response  = __('Este disponibilă versiunea: ') . $info->version . '<br />';
-		$response .= __('Versiunea instalată este: ') . $current_version;
+		$response  = dog__txt('Este disponibilă versiunea: ${v}', array('v' => $info->version)) . '<br />';
+		$response .= dog__txt('Versiunea instalată este: ${v}', array('v' => $current_version));
 		$is_newer = true;
 	} else {
-		$response = dog__replace_template_vars(__('Versiunea instalată ${v} este cea mai recentă'), array('v' => $current_version));
+		$response = dog__txt('Versiunea instalată ${v} este cea mai recentă', array('v' => $current_version));
 	}
 	$response = dog__string_to_html_tag($response, 'pre');
 	$info->last_check = date('Y-m-d H:i:s');
@@ -236,9 +264,10 @@ function dog_ajax__update() {
 	if ($info && $info->version && $info->about && $info->download) {
 		$info->update = 1;
 		dog__update_option(DOG__OPTION_UPDATE_INFO, $info);
-		return dog__ajax_response_ok(null, array('message' => __('Noua versiune este disponibilă în <a href="/wp-admin/update-core.php">pagina de actualizări. Apasă aici</a> pentru a porni actualizarea')));
+		$link = '<a href="/wp-admin/update-core.php">' . dog__txt('Apasă aici pentru a porni actualizarea') . '</a>';
+		return dog__ajax_response_ok(null, array('message' => dog__txt('Noua versiune este disponibilă în pagina de actualizări.') . ' ' . $link));
 	} else {
-		return dog__ajax_response_error(array('message' => __('Sistemul a întâmpinat o eroare. Informațiile necesare actualizării nu sunt complete. Te rugăm inițiază o nouă verificare')));
+		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Informațiile necesare actualizării nu sunt complete. Te rugăm inițiază o nouă verificare')));
 	}
 }
 
@@ -258,14 +287,17 @@ function dog_ajax__security() {
 			}
 		}
 	}
-	$response = __('Am găsit ${n} fișiere nesecurizate din totalul de ${t}');
-	$response = dog__replace_template_vars($response, array('n' => count($issues), 't' => count($php_files)));
+	$response = dog__txt('Am găsit ${n} fișiere nesecurizate din totalul de ${t}', array('n' => count($issues), 't' => count($php_files)));
 	if ($issues) {
 		$response = dog__string_to_html_tag($response, 'p');
 		$response .= implode('<br />', $issues);
 	}
 	$response = dog__string_to_html_tag($response, 'pre');
 	return dog__ajax_response_ok($response);
+}
+
+function dog_admin__menu_order($menu_order) {
+	return dog__override_with('admin_menu_order', array('index.php', 'edit.php', 'edit.php?post_type=page', 'edit-comments.php'));
 }
 
 function dog_admin__enqueue_assets($hook) {
@@ -284,4 +316,6 @@ function dog_admin__enqueue_assets($hook) {
 add_action('admin_menu', 'dog_admin__add_menu');
 add_action('admin_enqueue_scripts', 'dog_admin__enqueue_assets', 99999);
 add_action('wp_ajax_' . DOG_ADMIN__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
+add_filter('custom_menu_order', '__return_true');
+add_filter('menu_order', 'dog_admin__menu_order');
 dog__call_x_function('admin_hooks');
