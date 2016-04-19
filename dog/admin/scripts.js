@@ -63,7 +63,7 @@ function dog_admin__show_message($section, message, is_error) {
 	var parent_id = $section.attr('id');
 	dog_admin__timer_messages[parent_id] = setTimeout(function() {
 		dog_admin__hide_message($section);
-	}, 6000);
+	}, 7000);
 }
 
 function dog_admin__hide_message($section) {

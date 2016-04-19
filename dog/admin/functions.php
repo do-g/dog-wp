@@ -49,42 +49,6 @@ function dog_admin__nonces() {
 	return $nonces;
 }
 
-function dog_admin__get_transients($prefix = null, $expired = false, $extra_data = array(), $order_by = null) {
-	global $wpdb;
-	$prefix  = DOG_ADMIN__TRANSIENT_TIMEOUT_DB_PREFIX . ($prefix ? $prefix : '');
-	$join = '';
-	$fields = '';
-	$params = array();
-	if ($extra_data) {
-		foreach ($extra_data as $key => $alias) {
-			$key = substr($key, 0, 7);
-			$key = $wpdb->esc_like($key);
-			$alias = $wpdb->esc_like($alias);
-			$fields .= ", {$alias}.option_value AS {$alias}_option_value";
-			$join .= " INNER JOIN {$wpdb->options} {$alias} ON {$alias}.option_name = REPLACE(o.option_name, '_timeout_', '_{$key}_')";
-		}
-	}
-	$sql = "SELECT o.*{$fields} FROM {$wpdb->options} o{$join} WHERE o.option_name LIKE %s";
-	array_push($params, $wpdb->esc_like($prefix) . '%');
-	if ($expired) {
-		$time = time();
-		$sql .= " AND option_value < %d";
-		array_push($params, $time);
-	}
-	if ($order_by) {
-		$sql .= " order by " . esc_sql($order_by);
-	}
-	$sql = $wpdb->prepare($sql, $params);
-    return $wpdb->get_results($sql);
-}
-
-function dog_admin__delete_transients($list) {
-	foreach($list as $transient) {
-        $key = str_replace(DOG_ADMIN__TRANSIENT_TIMEOUT_DB_PREFIX, '', $transient->option_name);
-        dog__delete_transient($key, array('url'));
-    }
-}
-
 function dog_ajax__generate_labels() {
 	global $dog__pll_labels_file;
 	$labels = $keys = array();
@@ -140,86 +104,9 @@ function dog_ajax__generate_labels() {
 	return dog__ajax_response_ok($response);
 }
 
-function dog_ajax__cache_settings() {
-	dog__whitelist_fields(array(DOG__OPTION_OUTPUT_CACHE_ENABLED, DOG__OPTION_OUTPUT_CACHE_EXPIRES));
-	dog__get_post_data(DOG_ADMIN__NAMESPACE_CACHE_SETTINGS);
-	dog__validate_nonce(DOG_ADMIN__SECTION_CACHE_SETTINGS);
-	dog__validate_honeypot();
-	dog__validate_required_fields(array(DOG__OPTION_OUTPUT_CACHE_ENABLED, DOG__OPTION_OUTPUT_CACHE_EXPIRES));
-	if (dog__form_is_valid()) {
-		dog__update_option(DOG__OPTION_OUTPUT_CACHE_ENABLED, dog__get_post_value(DOG__OPTION_OUTPUT_CACHE_ENABLED), false);
-		dog__update_option(DOG__OPTION_OUTPUT_CACHE_EXPIRES, dog__get_post_value(DOG__OPTION_OUTPUT_CACHE_EXPIRES), false);
-		return dog_ajax__refresh_cache_settings(array('message' => dog__txt('Configurarea memoriei cache salvată cu succes')));
-	} else {
-		$response = dog_admin__cache_settings_form();
-		return dog__ajax_response_error(array('message' => dog__alert_message(DOG__ALERT_KEY_FORM_INVALID)), $response);
-	}
-}
-
 function dog_admin__get_include_contents($filename, $tpl_data = null) {
 	$filepath = dog__parent_admin_file_path($filename);
 	return dog__get_include_contents($filepath, $tpl_data);
-}
-
-function dog_admin__cache_settings_form() {
-	return dog_admin__get_include_contents('form-cache-settings.php');
-}
-
-function dog_ajax__refresh_cache_settings($extra = null) {
-	$response = dog_admin__cache_settings_form();
-	return dog__ajax_response_ok($response, $extra);
-}
-
-function dog_admin__get_expired_transients() {
-	return dog_admin__get_transients(null, true);
-}
-
-function dog_admin__list_expired_transients() {
-	$expired = dog_admin__get_expired_transients();
-	$response = $expired ? dog__txt('Am găsit ${n} înregistrări expirate', array('n' => count($expired))) : dog__txt('Nu există înregistrări expirate în memoria cache');
-	return dog__string_to_html_tag($response, 'pre');
-}
-
-function dog_ajax__refresh_expired_transients($extra = null) {
-	$response = dog_admin__list_expired_transients();
-	return dog__ajax_response_ok($response, $extra);
-}
-
-function dog_ajax__expired_transients() {
-	$expired = dog_admin__get_expired_transients();
-	dog_admin__delete_transients($expired);
-    return dog_ajax__refresh_expired_transients(array('message' => dog__txt('Memoria a fost curățată de înregistrări expirate')));
-}
-
-function dog_admin__get_output_cache() {
-	return dog_admin__get_transients(DOG__TRANSIENT_OUTPUT_CACHE_PREFIX, false, array('url' => 'u'), 'u.option_value');
-}
-
-function dog_admin__cache_output_form() {
-	return dog_admin__get_include_contents('form-cache-output.php');
-}
-
-function dog_ajax__refresh_cache_output($extra = null) {
-	$response = dog_admin__cache_output_form();
-	return dog__ajax_response_ok($response, $extra);
-}
-
-function dog_ajax__cache_output() {
-	$cache = dog_admin__get_output_cache();
-	dog_admin__delete_transients($cache, DOG__TRANSIENT_OUTPUT_CACHE_PREFIX);
-    return dog_ajax__refresh_cache_output(array('message' => dog__txt('Memoria paginilor a fost golită')));
-}
-
-function dog_ajax__cache_output_delete() {
-	$hashes = dog__get_post_value('rid', DOG__POST_FIELD_TYPE_ARRAY_TEXT, false);
-	if (!$hashes) {
-		return dog__ajax_response_error(array('message' => dog__alert_message_code(DOG__ALERT_KEY_RESPONSE_ERROR, DOG__AJAX_RESPONSE_CODE_INVALID_PARAM)), $response);
-	}
-	foreach ($hashes as $hash) {
-		$transient_name = DOG__TRANSIENT_OUTPUT_CACHE_PREFIX . $hash;
-		dog__delete_transient($transient_name, array('url'));
-	}
-	return dog_ajax__refresh_cache_output(array('message' => dog__txt('Ștergerea din memorie s-a finalizat cu succes')));
 }
 
 function dog_admin__update_info() {
@@ -294,6 +181,151 @@ function dog_ajax__security() {
 	}
 	$response = dog__string_to_html_tag($response, 'pre');
 	return dog__ajax_response_ok($response);
+}
+
+function dog_admin__minify_form() {
+	return dog_admin__get_include_contents('form-minify.php');
+}
+
+function dog_admin__minify_styles_value($field_name) {
+	$defaults = dog__extend_with('minify_styles', array(
+		dog__parent_css_url('shared')
+	));
+	$defaults = implode("\n", $defaults);
+	$option = dog__get_option($field_name, $defaults);
+	return dog__get_post_value_or_default($field_name, $option);
+}
+
+function dog_admin__minify_scripts_value($field_name) {
+	$defaults = dog__extend_with('minify_scripts', array(
+		dog__parent_js_url('vendor'),
+		dog__parent_js_url('shared')
+	));
+	$defaults = implode("\n", $defaults);
+	$option = dog__get_option($field_name, $defaults);
+	return dog__get_post_value_or_default($field_name, $option);
+}
+
+function dog_ajax__minify() {
+	dog__whitelist_fields(array(DOG__OPTION_MINIFY_STYLES, DOG__OPTION_MINIFY_SCRIPTS));
+	dog__get_post_data(DOG_ADMIN__NAMESPACE_MINIFY);
+	dog__validate_nonce(DOG_ADMIN__SECTION_MINIFY);
+	dog__validate_honeypot();
+	if (dog__form_is_valid()) {
+		return dog_admin__minify_files();
+	} else {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => dog__alert_message(DOG__ALERT_KEY_FORM_INVALID)), $response);
+	}
+}
+
+function dog_admin__minify_files() {
+	$errors = array();
+	$dest_dir = dog__compressed_asset_dir();
+	if (!is_dir($dest_dir)) {
+		if (mkdir($dest_dir, 0755, true) === false) {
+			$response = dog_admin__minify_form();
+			return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la crearea directorului în cache'), $response);
+		}
+	}
+
+	/***** styles *****/
+	$old_styles_version = dog__get_option(DOG__OPTION_MINIFY_STYLES_VERSION);
+	@unlink("{$dest_dir}/{$old_styles_version}.css");
+	$styles = dog__get_post_value(DOG__OPTION_MINIFY_STYLES);
+	$styles_content = '';
+	if ($styles) {
+		$styles_list = explode("\n", $styles);
+		foreach ($styles_list as $s) {
+			$s = trim($s);
+			$info = wp_remote_get($s);
+			if (!is_array($info) || !$info['body']) {
+				array_push($errors, $s);
+				continue;
+			}
+			$styles_content .= "{$info['body']}\n\n";
+		}
+		$styles_content = trim($styles_content);
+		$styles_content = dog__minify_style($styles_content);
+	}
+	$new_styles_version = md5($styles_content);
+	$dest_file = "{$dest_dir}/{$new_styles_version}.css";
+	$handle = fopen($dest_file, 'w');
+	if ($handle === false) {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la crearea fișierului CSS'), $response);
+	}
+	if (fwrite($handle, $styles_content) === false) {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la scrierea fișierului CSS'), $response);
+	}
+	dog__update_option(DOG__OPTION_MINIFY_STYLES, $styles, false);
+	dog__update_option(DOG__OPTION_MINIFY_STYLES_VERSION, $new_styles_version, false);
+
+	/***** scripts *****/
+	$old_scripts_version = dog__get_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION);
+	@unlink("{$dest_dir}/{$old_scripts_version}.js");
+	$scripts = dog__get_post_value(DOG__OPTION_MINIFY_SCRIPTS);
+	$scripts_content = '';
+	if ($scripts) {
+		$scripts_list = explode("\n", $scripts);
+		foreach ($scripts_list as $s) {
+			$s = trim($s);
+			$info = wp_remote_get($s);
+			if (!is_array($info) || !$info['body']) {
+				array_push($errors, $s);
+				continue;
+			}
+			$scripts_content .= "{$info['body']}\n\n";
+		}
+		$scripts_content = trim($scripts_content);
+		$scripts_content = dog__minify_script($scripts_content);
+	}
+	$new_scripts_version = md5($scripts_content);
+	$dest_file = "{$dest_dir}/{$new_scripts_version}.js";
+	$handle = fopen($dest_file, 'w');
+	if ($handle === false) {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la crearea fișierului JS'), $response);
+	}
+	if (fwrite($handle, $scripts_content) === false) {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la scrierea fișierului JS'), $response);
+	}
+	dog__update_option(DOG__OPTION_MINIFY_SCRIPTS, $scripts, false);
+	dog__update_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION, $new_scripts_version, false);
+
+	dog__clear_page_cache();
+
+	if ($errors) {
+		return dog_ajax__refresh_minify(array('message' => dog__txt('Fișierele au fost comprimate cu următoarele erori: ') . '<br /><br />' . implode('<br />', $errors)));
+	}
+	return dog_ajax__refresh_minify(array('message' => dog__txt('Fișierele au fost comprimate')));
+}
+
+function dog_ajax__refresh_minify($extra = null) {
+	$response = dog_admin__minify_form();
+	return dog__ajax_response_ok($response, $extra);
+}
+
+function dog_ajax__delete_minify() {
+	$dest_dir = dog__compressed_asset_dir();
+	$styles_version = dog__get_option(DOG__OPTION_MINIFY_STYLES_VERSION);
+	$styles_file = "{$dest_dir}/{$styles_version}.css";
+	@unlink($styles_file);
+	$scripts_version = dog__get_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION);
+	$scripts_file = "{$dest_dir}/{$scripts_version}.js";
+	@unlink($scripts_file);
+	if (is_file($styles_file) || is_file($scripts_file)) {
+		$response = dog_admin__minify_form();
+		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la ștergerea fișierelor'), $response);
+	}
+	dog__delete_option(DOG__OPTION_MINIFY_STYLES);
+	dog__delete_option(DOG__OPTION_MINIFY_STYLES_VERSION);
+	dog__delete_option(DOG__OPTION_MINIFY_SCRIPTS);
+	dog__delete_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION);
+	dog__clear_page_cache();
+	return dog_ajax__refresh_minify(array('message' => dog__txt('Fișierele comprimate au fost șterse')));
 }
 
 function dog_admin__menu_order($menu_order) {

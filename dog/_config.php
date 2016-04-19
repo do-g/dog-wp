@@ -47,7 +47,7 @@ define('DOG__PREFIX', 'dog__');
 define('DOG__PREFIX_ADMIN', 'dog_admin__');
 define('DOG__PREFIX_X', 'dogx__');
 define('DOG__PREFIX_AJAX', 'dog_ajax__');
-define('DOG__TRANSIENT_OUTPUT_CACHE_PREFIX', DOG__PREFIX . 'outcache');
+define('DOG__COMPRESSED_ASSET_DIR', '_min');
 /**********************************************/
 define('DOG__NC_VAR_PREFIX', 'nc__');
 define('DOG__WP_ACTION_AJAX_CALLBACK', 'dog__ajax');
@@ -62,29 +62,25 @@ define('DOG__ALERT_KEY_SERVER_FAILURE', 'server_failure');
 define('DOG__ALERT_KEY_CLIENT_FAILURE', 'client_failure');
 define('DOG__ALERT_KEY_FORM_INVALID', 'form_invalid');
 define('DOG__ALERT_KEY_EMPTY_SELECTION', 'empty_selection');
-define('DOG__OPTION_OUTPUT_CACHE_ENABLED', 'output_cache_enabled');
-define('DOG__OPTION_OUTPUT_CACHE_EXPIRES', 'output_cache_expires');
 define('DOG__OPTION_UPDATE_INFO', 'update_info');
+define('DOG__OPTION_MINIFY_STYLES', 'minify_styles');
+define('DOG__OPTION_MINIFY_STYLES_VERSION', 'minify_styles_version');
+define('DOG__OPTION_MINIFY_SCRIPTS', 'minify_scripts');
+define('DOG__OPTION_MINIFY_SCRIPTS_VERSION', 'minify_scripts_version');
 /**********************************************/
 define('DOG_ADMIN__MENU_SLUG', 'dog-theme-options');
 define('DOG_ADMIN__MENU_HOOK', 'toplevel_page_' . DOG_ADMIN__MENU_SLUG);
-define('DOG_ADMIN__NAMESPACE_CACHE_SETTINGS', 'cache_settings');
 define('DOG_ADMIN__SECTION_FILE_PREFIX', 'section-');
-define('DOG_ADMIN__CACHE_EXPIRATION_HOURS_DEFAULT', 24);
 define('DOG_ADMIN__TRANSIENT_DB_PREFIX', '_transient_');
 define('DOG_ADMIN__TRANSIENT_TIMEOUT_DB_PREFIX', DOG_ADMIN__TRANSIENT_DB_PREFIX . 'timeout_');
 define('DOG_ADMIN__SECTION_GENERATE_LABELS', 'generate-labels');
-define('DOG_ADMIN__SECTION_CACHE_SETTINGS', 'cache-settings');
-define('DOG_ADMIN__SECTION_CACHE_OUTPUT', 'cache-output');
-define('DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS', 'expired-transients');
+define('DOG_ADMIN__SECTION_MINIFY', 'minify');
 define('DOG_ADMIN__SECTION_UPDATE', 'update');
 define('DOG_ADMIN__SECTION_SECURITY', 'security');
-define('DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE', 'cache-output-delete');
 define('DOG_ADMIN__NONCE_UPDATE_CHECK', 'update-check');
 define('DOG_ADMIN__NONCE_UPDATE_INFO', 'update-info');
-define('DOG_ADMIN__NONCE_REFRESH_CACHE_SETTINGS', 'refresh-cache-settings');
-define('DOG_ADMIN__NONCE_REFRESH_CACHE_OUTPUT', 'refresh-cache-output');
-define('DOG_ADMIN__NONCE_REFRESH_EXPIRED_TRANSIENTS', 'refresh-expired-transients');
+define('DOG_ADMIN__NONCE_REFRESH_MINIFY', 'refresh-minify');
+define('DOG_ADMIN__NONCE_DELETE_MINIFY', 'delete-minify');
 
 date_default_timezone_set(DOG__TIMEZONE);
 

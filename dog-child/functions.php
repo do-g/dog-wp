@@ -1,11 +1,25 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');
 
-function dogx__enqueue_assets_low_priority() {
-	if (dog__is_env_dev()) {
+function dogx__enqueue_assets_low_priority($params) {
+	if (!$params['cached_styles']) {
 		wp_enqueue_style('styles', dog__css_url('styles'), array('base_styles'), null);
+	}
+	if (!$params['cached_scripts']) {
 		wp_enqueue_script('scripts', dog__js_url('scripts'), array('base_scripts'), null, true);
 	}
+}
+
+function dogx__minify_styles() {
+	return array(
+		dog__css_url('styles')
+	);
+}
+
+function dogx__minify_scripts() {
+	return array(
+		dog__js_url('scripts')
+	);
 }
 
 function dogx__theme_setup() {

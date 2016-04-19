@@ -23,28 +23,24 @@ $dog__form_field_types = dog__extend_with('form_field_types', array(
 		'email' => DOG__POST_FIELD_TYPE_EMAIL,
 		'mesaj' => DOG__POST_FIELD_TYPE_TEXTAREA
 	),
-	DOG_ADMIN__NAMESPACE_CACHE_SETTINGS => array(
-		DOG__OPTION_OUTPUT_CACHE_ENABLED => DOG__POST_FIELD_TYPE_NATURAL,
-		DOG__OPTION_OUTPUT_CACHE_EXPIRES => DOG__POST_FIELD_TYPE_NATURAL
+	DOG_ADMIN__NAMESPACE_MINIFY => array(
+		DOG__OPTION_MINIFY_STYLES => DOG__POST_FIELD_TYPE_TEXTAREA,
+		DOG__OPTION_MINIFY_SCRIPTS => DOG__POST_FIELD_TYPE_TEXTAREA
 	)
 ));
 
 $dog_admin__sections = dog__extend_with('admin_sections', array(
+	DOG_ADMIN__SECTION_MINIFY => dog__txt('Comprimare fișiere'),
 	DOG_ADMIN__SECTION_GENERATE_LABELS => dog__txt('Etichete'),
-	DOG_ADMIN__SECTION_CACHE_SETTINGS => dog__txt('Configurare cache'),
-	DOG_ADMIN__SECTION_CACHE_OUTPUT => dog__txt('Pagini în cache'),
-	DOG_ADMIN__SECTION_EXPIRED_TRANSIENTS => dog__txt('Înregistrări expirate'),
 	DOG_ADMIN__SECTION_UPDATE => dog__txt('Actualizări temă'),
 	DOG_ADMIN__SECTION_SECURITY => dog__txt('Verificări securitate'),
 ));
 
 $dog_admin__custom_nonces = dog__extend_with('nonces', array(
-	DOG_ADMIN__NONCE_CACHE_OUTPUT_DELETE,
 	DOG_ADMIN__NONCE_UPDATE_CHECK,
 	DOG_ADMIN__NONCE_UPDATE_INFO,
-	DOG_ADMIN__NONCE_REFRESH_CACHE_SETTINGS,
-	DOG_ADMIN__NONCE_REFRESH_CACHE_OUTPUT,
-	DOG_ADMIN__NONCE_REFRESH_EXPIRED_TRANSIENTS,
+	DOG_ADMIN__NONCE_REFRESH_MINIFY,
+	DOG_ADMIN__NONCE_DELETE_MINIFY,
 ));
 
 $dog__alert_messages = dog__extend_with('alert_messages', array(
@@ -176,6 +172,14 @@ function dog__admin_url($file_name, $display = true) {
 
 function dog__parent_admin_url($file_name, $display = true) {
 	return dog__parent_theme_url(dog__admin_url_fragment($file_name), $display);
+}
+
+function dog__compressed_asset_url_fragment($asset_name) {
+	return dog__theme_url_fragment(DOG__COMPRESSED_ASSET_DIR . '/' . ltrim($asset_name, '/'));
+}
+
+function dog__compressed_asset_url($asset_name, $display = true) {
+	return dog__asset_url(dog__compressed_asset_url_fragment($asset_name), $display);
 }
 
 /***** path methods *****/
@@ -488,6 +492,10 @@ function dog__update_option($name, $value, $autoload = false) {
 	return update_option(DOG__PREFIX . $name, $value, $autoload);
 }
 
+function dog__delete_option($name) {
+	return delete_option(DOG__PREFIX . $name);
+}
+
 function dog__redirect($location, $status = null) {
 	wp_redirect($location, $status);
 	exit;
@@ -781,43 +789,28 @@ function dog__delete_transient($name, $extra_data = array()) {
 	}
 }
 
-function dog__get_output_cache_transient_hash($transient) {
-	$transient = str_replace(DOG_ADMIN__TRANSIENT_TIMEOUT_DB_PREFIX, '', $transient);
-	$transient = str_replace(DOG__TRANSIENT_OUTPUT_CACHE_PREFIX, '', $transient);
-	return $transient;
+function dog__compressed_asset_dir() {
+	return get_stylesheet_directory() . '/' . DOG__COMPRESSED_ASSET_DIR;
 }
 
-function dog__get_uri_cache_key() {
-	$key = DOG__TRANSIENT_OUTPUT_CACHE_PREFIX . md5(dog__current_uri(false, true));
-	return $key;
-}
-
-function dog__save_output_cache($buffer) {
-	global $dog__current_template;
-	if ($dog__current_template && !is_404()) {
-		dog__set_transient(dog__get_uri_cache_key(), $buffer, HOUR_IN_SECONDS * dog__get_option(DOG__OPTION_OUTPUT_CACHE_EXPIRES), array('url' => dog__current_uri(false, true)));
+function dog__has_cached_assets($type, $version) {
+	if (!$version) {
+		return false;
 	}
-	return false;
+	$cache_file_name = $version . '.' . $type;
+	$cache_file_path = dog__compressed_asset_dir() . '/' . $cache_file_name;
+	if (!is_file($cache_file_path)) {
+		return false;
+	}
+	return dog__compressed_asset_url($cache_file_name);
 }
 
-function dog__check_output_cache() {
-	global $dog__output_cache_ignore_uri;
-	if (dog__is_get() && dog__get_option(DOG__OPTION_OUTPUT_CACHE_ENABLED)) {
-		$cache_key = dog__get_uri_cache_key();
-		if (false === ($cache = get_transient($cache_key))) {
-			$uri = dog__current_uri(false, true);
-			foreach ($dog__output_cache_ignore_uri as $i) {
-				if (stripos($uri, $i) !== false) {
-					return;
-				}
-			}
-			ob_start('dog__save_output_cache');
-		} else {
-			header('DOG output cache hash: ' . dog__get_output_cache_transient_hash($cache_key));
-			echo $cache;
-			exit;
-		}
-	}
+function dog__has_cached_styles() {
+	return dog__has_cached_assets('css', dog__get_option(DOG__OPTION_MINIFY_STYLES_VERSION));
+}
+
+function dog__has_cached_scripts() {
+	return dog__has_cached_assets('js', dog__get_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION));
 }
 
 function dog__enqueue_assets_high_priority() {
@@ -829,11 +822,25 @@ function dog__enqueue_assets_high_priority() {
 function dog__enqueue_assets_low_priority() {
 	$js_vars = dog__extend_with('js_vars', dog__js_vars());
 	$nonces = dog__nonces();
-	wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
-	wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
-	wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
-	wp_localize_script('base_scripts', 'dog__wp', array_merge($js_vars, $nonces));
-	dog__call_x_function(__FUNCTION__);
+
+	$cached_styles = dog__has_cached_styles();
+	if ($cached_styles !== false) {
+		wp_enqueue_style('cache_styles', $cached_styles, null, null);
+	} else {
+		wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
+	}
+
+	$cached_scripts = dog__has_cached_scripts();
+	if ($cached_scripts !== false) {
+		wp_enqueue_script('cache_script', $cached_scripts, null, null, true);
+		wp_localize_script('cache_script', 'dog__wp', array_merge($js_vars, $nonces));
+	} else {
+		wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
+		wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
+		wp_localize_script('base_scripts', 'dog__wp', array_merge($js_vars, $nonces));
+	}
+
+	dog__call_x_function(__FUNCTION__, array('cached_styles' => $cached_styles, 'cached_scripts' => $cached_scripts));
 }
 
 function dog__js_vars() {
@@ -1009,13 +1016,40 @@ function dog__reset_update() {
 	}
 }
 
+function dog__minify($value, $url) {
+	if ($value) {
+	    $postdata = array(
+	    	'http' => array(
+        		'method'  => 'POST',
+        		'header'  => 'Content-type: application/x-www-form-urlencoded',
+        		'content' => http_build_query(array('input' => $value))
+        	)
+        );
+		$value = file_get_contents($url, false, stream_context_create($postdata));
+	}
+	return $value;
+}
+
+function dog__minify_script($value) {
+	return dog__minify($value, 'https://javascript-minifier.com/raw');
+}
+
+function dog__minify_style($value) {
+	return dog__minify($value, 'http://cssminifier.com/raw');
+}
+
+function dog__clear_page_cache() {
+	if (function_exists('wp_cache_clear_cache')) {
+		wp_cache_clear_cache();
+	}
+}
+
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
 	add_filter('json_jsonp_enabled', '__return_false');
 	add_filter('use_default_gallery_style', '__return_false');
 	add_filter('template_include', 'dog__override_template', 99);
 	add_filter('clean_url', 'dog__async_defer', 11, 1);
-	add_action('after_setup_theme', 'dog__check_output_cache');
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_high_priority', 0);
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99990);
 	add_action('pre_get_posts', 'dog__enable_query_tags');
