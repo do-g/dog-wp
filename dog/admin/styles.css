@@ -201,6 +201,10 @@
 	margin-top: 20px;
 }
 
+#dog-form-minify {
+	margin-bottom: 0;
+}
+
 #dog-form-minify .form-label {
 	display: block;
 }
