@@ -11,7 +11,7 @@ if (dog__is_post('contact_submit')) {
 	if (dog__form_is_valid()) {
 		if (dog__send_form_email(DOG__NAMESPACE_CONTACT, $errors)) {
 			dog__set_flash_success('form', dog__txt('Mesajul a fost trimis'));
-			dog__safe_redirect(dog__current_uri());
+			dog__safe_redirect(dog__contact_success_url());
 		} else {
 			dog__set_form_error(dog__txt('Formularul nu poate fi trimis'));
 		}

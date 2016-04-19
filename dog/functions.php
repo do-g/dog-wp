@@ -122,16 +122,24 @@ function dog__parent_theme_url($file_name, $display = true) {
 	return dog__safe_url(get_template_directory_uri() . dog__theme_url_fragment($file_name), $display);
 }
 
+function dog__asset_url($file_name, $display = true) {
+	return DOG__STATIC_ASSETS_URL ? dog__safe_url(DOG__STATIC_ASSETS_URL . dog__theme_url_fragment($file_name), $display) : dog__theme_url($file_name, $display);
+}
+
+function dog__parent_asset_url($file_name, $display = true) {
+	return DOG__STATIC_PARENT_ASSETS_URL ? dog__safe_url(DOG__STATIC_PARENT_ASSETS_URL . dog__theme_url_fragment($file_name), $display) : dog__parent_theme_url($file_name, $display);
+}
+
 function dog__img_url_fragment($image_file_name) {
 	return dog__theme_url_fragment('images/' . ltrim($image_file_name, '/'));
 }
 
 function dog__img_url($image_file_name, $display = true) {
-	return dog__theme_url(dog__img_url_fragment($image_file_name), $display);
+	return dog__asset_url(dog__img_url_fragment($image_file_name), $display);
 }
 
 function dog__parent_img_url($image_file_name, $display = true) {
-	return dog__parent_theme_url(dog__img_url_fragment($image_file_name), $display);
+	return dog__parent_asset_url(dog__img_url_fragment($image_file_name), $display);
 }
 
 function dog__js_url_fragment($script_file_name) {
@@ -139,11 +147,11 @@ function dog__js_url_fragment($script_file_name) {
 }
 
 function dog__js_url($script_file_name, $display = true) {
-	return dog__theme_url(dog__js_url_fragment($script_file_name), $display);
+	return dog__asset_url(dog__js_url_fragment($script_file_name), $display);
 }
 
 function dog__parent_js_url($script_file_name, $display = true) {
-	return dog__parent_theme_url(dog__js_url_fragment($script_file_name), $display);
+	return dog__parent_asset_url(dog__js_url_fragment($script_file_name), $display);
 }
 
 function dog__css_url_fragment($style_file_name) {
@@ -151,11 +159,11 @@ function dog__css_url_fragment($style_file_name) {
 }
 
 function dog__css_url($style_file_name, $display = true) {
-	return dog__theme_url(dog__css_url_fragment($style_file_name), $display);
+	return dog__asset_url(dog__css_url_fragment($style_file_name), $display);
 }
 
 function dog__parent_css_url($style_file_name, $display = true) {
-	return dog__parent_theme_url(dog__css_url_fragment($style_file_name), $display);
+	return dog__parent_asset_url(dog__css_url_fragment($style_file_name), $display);
 }
 
 function dog__admin_url_fragment($file_name) {
@@ -507,6 +515,10 @@ function dog__contact_url() {
 	return dog__lang_url('contact');
 }
 
+function dog__contact_success_url() {
+	return dog__override_with(__FUNCTION__, dog__contact_url() . '?' . uniqid() . '=' . time());
+}
+
 function dog__whitelist_fields($allowed) {
 	$default = array('_wp_http_referer', DOG__NC_NAME, DOG__HP_TIMER_NAME, DOG__HP_JAR_NAME);
 	$allowed = array_merge($allowed, $default);
@@ -817,16 +829,10 @@ function dog__enqueue_assets_high_priority() {
 function dog__enqueue_assets_low_priority() {
 	$js_vars = dog__extend_with('js_vars', dog__js_vars());
 	$nonces = dog__nonces();
-	if (dog__is_env_pro()) {
-		wp_enqueue_style('styles', dog__css_url('styles.min'), null, null);
-		wp_enqueue_script('scripts', dog__js_url('scripts.min'), null, null, true);
-		wp_localize_script('scripts', 'dog__wp', array_merge($js_vars, $nonces));
-	} else {
-		wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
-		wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
-		wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
-		wp_localize_script('base_scripts', 'dog__wp', array_merge($js_vars, $nonces));
-	}
+	wp_enqueue_style('base_styles', dog__parent_css_url('shared'), null, null);
+	wp_enqueue_script('base_vendor', dog__parent_js_url('vendor'), null, null, true);
+	wp_enqueue_script('base_scripts', dog__parent_js_url('shared'), array('base_vendor'), null, true);
+	wp_localize_script('base_scripts', 'dog__wp', array_merge($js_vars, $nonces));
 	dog__call_x_function(__FUNCTION__);
 }
 

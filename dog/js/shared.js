@@ -41,7 +41,9 @@ function dog__shared_lib() {
   	reset: function() {
       clearTimeout(this.timeout);
       this.$container = null;
+      this.debug = false;
       this.queue = {};
+      this.times = {};
       this.assets = ['sessions'];
       this.images_registered = false;
       this.count_images_loaded = 0;
@@ -49,6 +51,10 @@ function dog__shared_lib() {
   	register: function(key, asset_type) {
       if (!asset_type || this.watches(asset_type)) {
   		  this.queue[key] = false;
+        if (this.debug) {
+          var t = this.set_time_registered(key);
+          console.log('registered key [' + key + '] of type [' + asset_type + '] at ' + t);
+        }
         return true;
       }
       return false;
@@ -56,6 +62,10 @@ function dog__shared_lib() {
   	done: function(key) {
   	  if (this.queue.hasOwnProperty(key)) {
   			this.queue[key] = true;
+        if (this.debug) {
+          var t = this.get_time_elapsed(key);
+          console.log('completed key [' + key + '] in [' + t[0] + '] seconds at ' + t[1]);
+        }
   			this.check();
         return true;
   	  }
@@ -76,7 +86,7 @@ function dog__shared_lib() {
   	  percent = percent && percent > 1 ? percent : 1;
   	  jQuery('.preloader .bar').css('width', percent + '%');
   	  if (percent == 100) {
-  	    jQuery(document).trigger('dog.preloader_complete');
+  	    this.trigger_complete();
   	  }
       return percent;
   	},
@@ -90,6 +100,11 @@ function dog__shared_lib() {
     },
     complete: function() {
       jQuery('body').removeClass('preloading').addClass('ready');
+      if (this.debug) {
+        var t = this.get_time_elapsed('preloader');
+        console.log('completed key [preloader] in [' + t[0] + '] seconds at ' + t[1]);
+      }
+      this.reset();
     },
     force_complete: function() {
       for (key in this.queue) {
@@ -103,13 +118,29 @@ function dog__shared_lib() {
     watch: function (list) {
       jQuery.extend(this.assets, list);
     },
-    watches: function(type) {
+    watches: function (type) {
       return self.in_array(type, this.assets);
+    },
+    set_time_registered: function (key) {
+      var d = new Date();
+      var t = d.getTime();
+      this.times[key] = t;
+      return t;
+    },
+    get_time_elapsed: function (key) {
+      var d = new Date();
+      var t = d.getTime();
+      var secs = (t - this.times[key]) / 1000;
+      return [secs.toPrecision(2), t];
     }
   };
 
-  this.preload = function (asset_types, container_selector) {
+  this.preload = function (asset_types, container_selector, debug) {
     preloader.reset();
+    preloader.debug = debug;
+    if (preloader.debug) {
+      preloader.set_time_registered('preloader');
+    }
     preloader.listen();
     container_selector = container_selector ? container_selector : 'body';
     preloader.$container = jQuery(container_selector);

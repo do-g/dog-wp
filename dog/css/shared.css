@@ -68,7 +68,7 @@ body.preloading .preloader {
 
 *[class^="show-"],
 *[class*=" show-"] {
-    display: none;
+    display: none !important;
 }
 
 /***** only large screens *****/
@@ -79,17 +79,17 @@ body.preloading .preloader {
 
 	.show-large-block,
 	.show-desktop-block {
-		display: block;
+		display: block !important;
 	}
 
 	.show-large-inline-block,
 	.show-desktop-inline-block {
-		display: inline-block;
+		display: inline-block !important;
 	}
 
 	.show-large-inline,
 	.show-desktop-inline {
-		display: inline;
+		display: inline !important;
 	}
 
 }
@@ -110,17 +110,17 @@ body.preloading .preloader {
 
 	.show-medium-block,
 	.show-desktop-block {
-		display: block;
+		display: block !important;
 	}
 
 	.show-medium-inline-block,
 	.show-desktop-inline-block {
-		display: inline-block;
+		display: inline-block !important;
 	}
 
 	.show-medium-inline,
 	.show-desktop-inline {
-		display: inline;
+		display: inline !important;
 	}
 
 }
@@ -141,17 +141,17 @@ body.preloading .preloader {
 
 	.show-tablet-block,
 	.show-mobile-block {
-		display: block;
+		display: block !important;
 	}
 
 	.show-tablet-inline-block,
 	.show-mobile-inline-block {
-		display: inline-block;
+		display: inline-block !important;
 	}
 
 	.show-tablet-inline,
 	.show-mobile-inline {
-		display: inline;
+		display: inline !important;
 	}
 
 }
@@ -164,17 +164,17 @@ body.preloading .preloader {
 
 	.show-phone-block,
 	.show-mobile-block {
-		display: block;
+		display: block !important;
 	}
 
 	.show-phone-inline-block,
 	.show-mobile-inline-block {
-		display: inline-block;
+		display: inline-block !important;
 	}
 
 	.show-phone-inline,
 	.show-mobile-inline {
-		display: inline;
+		display: inline !important;
 	}
 
 }

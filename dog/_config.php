@@ -3,13 +3,27 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
 define('DOG__ENV_DEVELOPMENT', 'development');
 define('DOG__ENV_PRODUCTION', 'production');
-define('DOG__ENV', DOG__ENV_DEVELOPMENT);
-define('DOG__NC_NAME', 'non4c0ef5ece8c4765116c845babxg7y');
+if (!defined('DOG__ENV')) {
+	define('DOG__ENV', DOG__ENV_DEVELOPMENT);
+}
+if (!defined('DOG__NC_NAME')) {
+	define('DOG__NC_NAME', 'non4c0ef5ece8c4765116c845babxg7y');
+}
 define('DOG__POST_THUMBNAIL_DEFAULT', 'default-post-thumb.jpg');
 define('DOG__HONEYPOT_ENABLED', true);
+if (!defined('DOG__STATIC_ASSETS_URL')) {
+	define('DOG__STATIC_ASSETS_URL', null);
+}
+if (!defined('DOG__STATIC_PARENT_ASSETS_URL')) {
+	define('DOG__STATIC_PARENT_ASSETS_URL', null);
+}
 /**********************************************/
-define('DOG__HP_TIMER_NAME', 'hon6c0ef5ece8c4765116c845babxgxx');
-define('DOG__HP_JAR_NAME', 'dat4c0ef5ece8c4765116c845babcea6');
+if (!defined('DOG__HP_TIMER_NAME')) {
+	define('DOG__HP_TIMER_NAME', 'hon6c0ef5ece8c4765116c845babxgxx');
+}
+if (!defined('DOG__HP_JAR_NAME')) {
+	define('DOG__HP_JAR_NAME', 'dat4c0ef5ece8c4765116c845babcea6');
+}
 define('DOG__HONEYPOT_TIMER_SECONDS', 1);
 define('DOG__NAMESPACE_CONTACT', 'contact');
 define('DOG__TIMEZONE', 'Europe/Bucharest');
