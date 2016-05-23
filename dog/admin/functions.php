@@ -320,9 +320,7 @@ function dog_ajax__delete_minify() {
 		$response = dog_admin__minify_form();
 		return dog__ajax_response_error(array('message' => 'Sistemul a întâmpinat o eroare la ștergerea fișierelor'), $response);
 	}
-	dog__delete_option(DOG__OPTION_MINIFY_STYLES);
 	dog__delete_option(DOG__OPTION_MINIFY_STYLES_VERSION);
-	dog__delete_option(DOG__OPTION_MINIFY_SCRIPTS);
 	dog__delete_option(DOG__OPTION_MINIFY_SCRIPTS_VERSION);
 	dog__clear_page_cache();
 	return dog_ajax__refresh_minify(array('message' => dog__txt('Fișierele comprimate au fost șterse')));

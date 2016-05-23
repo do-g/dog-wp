@@ -12,6 +12,10 @@ body {
 	padding: 0;
 }
 
+.hide {
+	display: none;
+}
+
 /***** general *****/
 
 .clearfix:before,
