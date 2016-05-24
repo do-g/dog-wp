@@ -1,6 +1,12 @@
 #!/usr/bin/php
 <?php
 $mode = $argv[1];
+if (!$mode) {
+	echo "Preparing archive\n";
+	exec("zip -r dog.zip dog dog-child");
+	echo "Archive ready\n";
+	exit;
+}
 $version_file = 'dog/style.css';
 $contents = file_get_contents($version_file);
 if (!preg_match('/Version: (.*)/', $contents, $matches)) {
