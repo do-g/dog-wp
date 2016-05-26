@@ -104,6 +104,10 @@ function dog__search_files($folder, $pattern) {
     return $fileList;
 }
 
+function dog__array_merge_unique($arr1, $arr1) {
+	return array_unique(array_merge($arr1, $arr1));
+}
+
 /***** url methods *****/
 
 function dog__theme_url_fragment($file_name) {
@@ -909,6 +913,7 @@ function dog__theme_setup() {
 function dog__init() {
 	add_post_type_support('page', 'excerpt');
 	register_taxonomy_for_object_type('post_tag', 'page');
+	register_taxonomy_for_object_type('post_tag', 'attachment');
 	dog__call_x_function(__FUNCTION__);
 	if(!session_id()) {
         session_start();

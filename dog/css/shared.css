@@ -39,6 +39,45 @@ ol.clean {
 	list-style-type: none;
 }
 
+/***** positioning *****/
+
+.relative {
+	position: relative;
+}
+
+.absolute {
+	position: absolute;
+}
+
+.fixed {
+	position: fixed;
+}
+
+.h-center {
+	margin: 0 auto;
+}
+
+.h-center-content {
+	text-align: center;
+}
+
+.v-center {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.v-center-content {
+	vertical-align: middle;
+}
+
+.a-center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
 /***** preloader *****/
 
 body.preloading .page-wrapper {
