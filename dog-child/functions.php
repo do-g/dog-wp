@@ -1,6 +1,8 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');
 
+define('DOG__EMAIL_CONTACT', null);
+
 function dogx__enqueue_assets_low_priority($params) {
 	if (!$params['cached_styles']) {
 		wp_enqueue_style('styles', dog__css_url('styles'), array('base_styles'), null);

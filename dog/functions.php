@@ -663,7 +663,7 @@ function dog__send_form_email($namespace, &$errors = array()) {
 	$template_data['website_title'] = get_bloginfo('name');
 	$template = dog__get_email_template('contact-email-receiver');
 	$template = dog__replace_template_vars($template, $template_data);
-	$to = get_option('admin_email');
+	$to = defined('DOG__EMAIL_CONTACT') && DOG__EMAIL_CONTACT ? DOG__EMAIL_CONTACT : get_option('admin_email');
 	$headers = array(
 		'Content-Type: text/html; charset=UTF-8',
 		'Sender: noreply@' . $domain,
