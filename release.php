@@ -3,7 +3,7 @@
 $mode = $argv[1];
 if (!$mode) {
 	echo "Preparing archive\n";
-	exec("zip -r dog.zip dog dog-child");
+	exec("zip -r dog.zip dog dogx");
 	echo "Archive ready\n";
 	exit;
 }

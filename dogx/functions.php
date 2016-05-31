@@ -5,21 +5,25 @@ define('DOG__EMAIL_CONTACT', null);
 
 function dogx__enqueue_assets_low_priority($params) {
 	if (!$params['cached_styles']) {
-		wp_enqueue_style('styles', dog__css_url('styles'), array('base_styles'), null);
+		wp_enqueue_style('vendor', dog__css_url('vendor'), array('base_styles'), null);
+		wp_enqueue_style('styles', dog__css_url('styles'), array('vendor'), null);
 	}
 	if (!$params['cached_scripts']) {
-		wp_enqueue_script('scripts', dog__js_url('scripts'), array('base_scripts'), null, true);
+		wp_enqueue_script('vendor', dog__js_url('vendor'), array('base_scripts'), null, true);
+		wp_enqueue_script('scripts', dog__js_url('scripts'), array('vendor'), null, true);
 	}
 }
 
 function dogx__minify_styles() {
 	return array(
+		dog__css_url('vendor'),
 		dog__css_url('styles')
 	);
 }
 
 function dogx__minify_scripts() {
 	return array(
+		dog__js_url('vendor'),
 		dog__js_url('scripts')
 	);
 }
