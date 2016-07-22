@@ -104,8 +104,8 @@ function dog__search_files($folder, $pattern) {
     return $fileList;
 }
 
-function dog__array_merge_unique($arr1, $arr1) {
-	return array_unique(array_merge($arr1, $arr1));
+function dog__array_merge_unique($arr1, $arr2) {
+	return array_unique(array_merge($arr1, $arr2));
 }
 
 /***** url methods *****/
