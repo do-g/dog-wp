@@ -30,5 +30,7 @@ function dogx__minify_scripts() {
 
 function dogx__theme_setup() {
 	register_nav_menu('location-main-menu', 'Locație Meniu Principal');
-	add_image_size('small', 600, 9999);
+	add_image_size('xsmall', 400,  9999);
+	add_image_size('small',  600,  9999);
+	add_image_size('xlarge', 1200, 9999);
 }
