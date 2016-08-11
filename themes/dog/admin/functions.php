@@ -343,6 +343,35 @@ function dog_admin__enqueue_assets($hook) {
 	wp_enqueue_script('admin_scripts', dog__parent_admin_url('scripts.js'), array('base_scripts'), null, true);
 }
 
+function dog_admin__requires() {
+	if (!is_plugin_active('dog/dog.php')) {
+		add_action('admin_notices', 'dog_admin__base_plugin_notice');
+		dog_admin__switch_theme();
+	}
+}
+
+function dog_admin__switch_theme() {
+	global $dog__themes;
+	$themes = wp_get_themes();
+	if ($themes) {
+		foreach ($themes as $name => $data) {
+			if (!in_array($name, $dog__themes)) {
+				switch_theme($name);
+				return;
+			}
+		}
+	}
+}
+
+function dog_admin__base_plugin_notice() {
+	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active</p></div><?php
+}
+
+function dog_admin__base_theme_notice() {
+	?><div class="error"><p>DOG Base theme cannot be used on its own. It is an abstract layer under DOG Extension</p></div><?php
+}
+
+add_action('admin_init', 'dog_admin__requires');
 add_action('admin_menu', 'dog_admin__add_menu');
 add_action('admin_enqueue_scripts', 'dog_admin__enqueue_assets', 99999);
 add_action('wp_ajax_' . DOG_ADMIN__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');

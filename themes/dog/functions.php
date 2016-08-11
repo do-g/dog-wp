@@ -2,6 +2,8 @@
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 require_once(get_template_directory() . '/_config.php');
 
+$dog__themes = array('dog', 'dogx');
+
 $dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
 	'AboutPage' => array('despre', 'about'),
 	'ContactPage' => array('contact', 'contact-us'),
@@ -486,18 +488,6 @@ function dog__is_post($key = null) {
 
 function dog__is_get($key = null) {
 	return strtoupper($_SERVER['REQUEST_METHOD']) == 'GET' && ($key ? sanitize_text_field($key) : 1);
-}
-
-function dog__get_option($name, $default = null) {
-	return get_option(DOG__PREFIX . $name, $default);
-}
-
-function dog__update_option($name, $value, $autoload = false) {
-	return update_option(DOG__PREFIX . $name, $value, $autoload);
-}
-
-function dog__delete_option($name) {
-	return delete_option(DOG__PREFIX . $name);
 }
 
 function dog__redirect($location, $status = null) {
@@ -1001,26 +991,6 @@ function dog__override_with($function_name, $default = null, $params = null) {
 	return $local_value ? $local_value : $default;
 }
 
-function dog__register_update($updates) {
-	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
-	if ($info && $info->update && $info->version && $info->about && $info->download) {
-		$updates->response[DOG__THEME_NAME] = array(
-			'new_version' => $info->version,
-			'url' => $info->about,
-			'package' => $info->download,
-		);
-	}
-	return $updates;
-}
-
-function dog__reset_update() {
-	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
-	if ($info) {
-		$info->update = 0;
-		dog__update_option(DOG__OPTION_UPDATE_INFO, $info);
-	}
-}
-
 function dog__minify($value, $url) {
 	if ($value) {
 	    $postdata = array(
@@ -1073,9 +1043,6 @@ add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');
 add_action('wp_ajax_nopriv_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
 add_action('wp_ajax_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
-#add_filter('pre_set_site_transient_update_themes', 'dog__check_for_updates');
-add_filter('site_transient_update_themes', 'dog__register_update');
-add_action('delete_site_transient_update_themes', 'dog__reset_update');
 dog__call_x_function('hooks');
 
 if (is_admin()) {

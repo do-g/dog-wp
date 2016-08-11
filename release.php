@@ -1,13 +1,21 @@
 #!/usr/bin/php
 <?php
-$mode = $argv[1];
-if (!$mode) {
-	echo "Preparing archive\n";
-	exec("zip -r dog.zip dog dogx");
-	echo "Archive ready\n";
+$file = basename(__FILE__);
+$path = trim($argv[1], DIRECTORY_SEPARATOR);
+if (!$path) {
+	echo "Please specify release source path\n";
+	echo "\tex: $ php {$file} themes/dog\n";
 	exit;
 }
-$version_file = 'dog/style.css';
+$mode = $argv[2];
+if (!$mode) {
+	echo "Please specify release mode (M, m, r)\n";
+	echo "\tex: $ php {$file} themes/dog r\n";
+	exit;
+}
+$full_path = realpath($path);
+$name = basename($full_path);
+$version_file = is_file("{$full_path}/style.css") ? "{$full_path}/style.css" : "{$full_path}/{$name}.php";
 $contents = file_get_contents($version_file);
 if (!preg_match('/Version: (.*)/', $contents, $matches)) {
 	die("Version string not found\n");
@@ -40,6 +48,18 @@ $new_version = implode('.', $parts);
 $new_contents = str_replace("Version: {$version}", "Version: {$new_version}", $contents);
 file_put_contents($version_file, $new_contents);
 echo "File updated with version {$new_version}\n";
-echo "Preparing archive\n";
-exec("zip -r dog.{$new_version}.zip dog");
+$archive_name = "{$name}.{$new_version}.zip";
+echo "Preparing archive: {$archive_name}\n";
+chdir($full_path . '/..');
+exec("zip -r {$archive_name} {$name}");
+$dest = "{$path}/{$archive_name}";
+echo "Uploading archive: {$dest}\n";
+$conn_id = ftp_connect('ftp.dorinoanagurau.ro');
+$login_result = ftp_login($conn_id, 'wp@public.dorinoanagurau.ro', 'cb3!c)#~VT]-');
+if (!ftp_put($conn_id, $dest, $archive_name, FTP_BINARY)) {
+	die('Unable to upload archive');
+}
+ftp_close($conn_id);
+echo "Deleting archive: {$archive_name}\n";
+@unlink($archive_name);
 echo "Version: {$new_version} is ready\n";

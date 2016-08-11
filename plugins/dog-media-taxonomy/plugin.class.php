@@ -1,19 +1,27 @@
 <?php
 
-require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
+require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');
 
 class Dog_Media_Taxonomy {
 
 	const DEFAULT_TAXONOMY_NAME = 'dog__media_cat';
 	const DEFAULT_TAXONOMY_SLUG = 'media';
-	private static $_initiated = false;
+	private static $_initialized = false;
 
 	public static function init() {
-		if (self::$_initiated) {
+		if (self::$_initialized) {
 			return;
 		}
-		add_action('init', array('Dog_Media_Taxonomy', 'register_media_taxonomy'));
-		self::$_initiated = true;
+		add_action('init', array(__CLASS__, 'setup'));
+		self::$_initialized = true;
+	}
+
+	public static function setup() {
+		if (self::check()) {
+			self::register_media_taxonomy();
+		} else {
+			add_action('admin_init', array(__CLASS__, 'requires'));
+		}
 	}
 
 	private static function config() {
@@ -48,6 +56,34 @@ class Dog_Media_Taxonomy {
 	public static function register_media_taxonomy() {
 		$config = self::config();
 		register_taxonomy($config['name'], 'attachment', $config['args']);
+	}
+
+	/***** REQUIRE DEPENDENCIES *****/
+
+	public static function check() {
+		return function_exists('dog__get_option');
+	}
+
+	public static function requires() {
+        add_action('admin_notices', array(__CLASS__, 'requires_notice'));
+        $plugin_name = basename(dirname(__FILE__));
+        $plugin_name = "{$plugin_name}/{$plugin_name}.php";
+        deactivate_plugins($plugin_name);
+        if (isset($_GET['activate'])) {
+            unset($_GET['activate']);
+        }
+	}
+
+	public static function requires_notice() {
+		$plugin_path = dirname(__FILE__);
+		$plugin_name = basename($plugin_path);
+		$plugin_file = "{$plugin_path}/{$plugin_name}.php";
+		$contents = file_get_contents($plugin_file);
+		if (preg_match('/Plugin Name: (.*)/', $contents, $matches)) {
+			$name = trim($matches[1]);
+			$plugin_name = $name ? $name : $plugin_name;
+		}
+		?><div class="error"><p>Plugin "<?= $plugin_name ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
 	}
 
 }
