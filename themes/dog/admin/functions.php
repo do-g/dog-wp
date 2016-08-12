@@ -10,7 +10,7 @@ function dog_admin__add_menu(){
 	$function = 'dog_admin__theme_options';
 	$icon = 'dashicons-layout';
     add_menu_page($page_title, $menu_title, $capability, $menu_slug, $function, $icon);
-    $admin_sections = dog_admin__get_sections();
+    $admin_sections = dog__get_admin_sections();
     if ($admin_sections) {
     	foreach ($admin_sections as $name => $title) {
     		add_submenu_page($menu_slug, $title, $title, $capability, 'admin.php?page=' . $menu_slug . '#section-' . $name);
@@ -22,11 +22,6 @@ function dog_admin__theme_options() {
 	include 'layout.php';
 }
 
-function dog_admin__get_sections() {
-	global $dog_admin__sections;
-	return $dog_admin__sections;
-}
-
 function dog_admin__get_custom_nonces() {
 	global $dog_admin__custom_nonces;
 	return $dog_admin__custom_nonces;
@@ -34,7 +29,7 @@ function dog_admin__get_custom_nonces() {
 
 function dog_admin__nonces() {
 	$nonces = array();
-	$admin_sections = dog_admin__get_sections();
+	$admin_sections = dog__get_admin_sections();
 	if ($admin_sections) {
 		foreach ($admin_sections as $name => $title) {
 			$nonces[dog__nonce_var_key($name)] = wp_create_nonce(dog__string_to_key($name));
@@ -50,131 +45,88 @@ function dog_admin__nonces() {
 }
 
 function dog_ajax__generate_labels() {
-	global $dog__pll_labels_file;
-	$labels = $keys = array();
-	$output = $dog__pll_labels_file;
-	$ignore = array('_pll_labels.php');
-	$file_names = array();
-	$child_pattern = dog__file_path('*.php');
-	$all_files = glob($child_pattern);
-	$parent_pattern = dog__parent_file_path('*.php');
-	$all_files = array_merge($all_files, glob($parent_pattern));
-	foreach ($all_files as $file) {
-		$file_name = basename($file);
-		if (in_array($file_name, $ignore) || in_array($file_name, $file_names)) {
-			continue;
+	global $dog__theme_labels_file;
+	$all_labels = array();
+	$themes = array_reverse(dog__get_dog_theme_names());
+	if ($themes) {
+		$theme_files = array();
+		$output = array("<?php\n");
+		foreach ($themes as $theme) {
+			$labels = dog_admin__get_path_labels(get_theme_root(), $theme, $theme_files);
+			$all_labels = array_merge($all_labels, $labels);
+			$output = array_merge($output, $labels);
 		}
-		array_push($file_names, $file_name);
-	    $labels = array_merge($labels, dog__extract_file_labels($file));
+		file_put_contents($dog__theme_labels_file, implode('', $output));
 	}
-	$admin_labels = $admin_keys = array();
-	$file_names = array();
-	$child_admin_pattern = dog__admin_file_path('*.php');
-	$all_admin_files = glob($child_admin_pattern);
-	$parent_admin_pattern = dog__parent_admin_file_path('*.php');
-	$all_admin_files = array_merge($all_admin_files, glob($parent_admin_pattern));
-	foreach ($all_admin_files as $file) {
-		$file_name = basename($file);
-		if (in_array($file_name, $ignore) || in_array($file_name, $file_names)) {
-			continue;
-		}
-		array_push($file_names, $file_name);
-	    $admin_labels = array_merge($admin_labels, dog__extract_file_labels($file));
-	}
-	$content = array("<?php\n", "require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');\n");
-	foreach ($labels as $l) {
-		$key = sanitize_title($l);
-		if (!in_array($key, $keys)) {
-			array_push($content, "pll_register_string('{$key}', '{$l}', 'theme', true);\n");
-			array_push($keys, $key);
+	$plugins = dog__get_dog_plugin_names();
+	if ($plugins) {
+		foreach ($plugins as $plugin) {
+			$output = array("<?php\n");
+			$labels = dog_admin__get_path_labels(WP_PLUGIN_DIR, $plugin);
+			$all_labels = array_merge($all_labels, $labels);
+			$output = array_merge($output, $labels);
+			$dest = WP_PLUGIN_DIR . "/{$plugin}/_pll_labels.php";
+			file_put_contents($dest, implode('', $output));
+			copy($dest, str_replace('.php', ".{$plugin}.bak", $dog__theme_labels_file));
 		}
 	}
-	foreach ($admin_labels as $l) {
-		$key = sanitize_title($l);
-		if (!in_array($key, $admin_keys)) {
-			array_push($content, "pll_register_string('{$key}', '{$l}', 'admin', true);\n");
-			array_push($admin_keys, $key);
-		}
-	}
-	file_put_contents($output, implode('', $content));
-	$all_labels = array_merge($labels, $admin_labels);
 	$response = dog__txt('Am găsit următoarele etichete (${n}):', array('n' => count($all_labels)));
 	$response = dog__string_to_html_tag($response, 'p');
 	$response .= dog__string_to_html_tag(implode('<br />', $all_labels), 'pre');
 	return dog__ajax_response_ok($response);
 }
 
-function dog_admin__get_include_contents($filename, $tpl_data = null) {
-	$filepath = dog__parent_admin_file_path($filename);
-	return dog__get_include_contents($filepath, $tpl_data);
-}
-
-function dog_admin__update_info() {
-	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
-	$last_check = $info && $info->last_check ? $info->last_check : dog__txt('nu există');
-	$response = dog__txt('Ultima verificare: ${d}', array('d' => $last_check)) . '<br />';
-	$response .= dog__txt('Versiunea instalată este: ${v}', array('v' => dog__parent_theme_version()));
-	return dog__string_to_html_tag($response, 'pre');
-}
-
-function dog_ajax__update_info() {
-	return dog__ajax_response_ok(dog_admin__update_info());
-}
-
-function dog_ajax__update_check() {
-	$info = wp_remote_get(DOG__UPDATE_URL);
-	if (!is_array($info)) {
-		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat')));
+function dog_admin__get_path_labels($path, $name, &$all_translated_files = array()) {
+	$path = "{$path}/{$name}";
+	$content = $labels = $keys = array();
+	if (!is_dir($path)) {
+		return $content;
 	}
-	$info = json_decode($info['body']);
-	if (json_last_error() != JSON_ERROR_NONE) {
-		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat')));
+	$ignore_files = array('_pll_labels.php');
+	$pattern = "{$path}/*.php";
+	$files = glob($pattern, GLOB_NOSORT);
+	if ($files) {
+		foreach ($files as $file) {
+			$file_name = basename($file);
+			if (in_array($file_name, $ignore_files) || in_array($file_name, $all_translated_files)) {
+				continue;
+			}
+			array_push($all_translated_files, $file_name);
+		    $labels = array_merge($labels, dog__extract_file_labels($file));
+		}
 	}
-	$current_version = dog__parent_theme_version();
-	$is_newer = false;
-	if (version_compare($info->version, $current_version) == 1) {
-		$response  = dog__txt('Este disponibilă versiunea: ${v}', array('v' => $info->version)) . '<br />';
-		$response .= dog__txt('Versiunea instalată este: ${v}', array('v' => $current_version));
-		$is_newer = true;
-	} else {
-		$response = dog__txt('Versiunea instalată ${v} este cea mai recentă', array('v' => $current_version));
-	}
-	$response = dog__string_to_html_tag($response, 'pre');
-	$info->last_check = date('Y-m-d H:i:s');
-	$info->update = 0;
-	dog__update_option(DOG__OPTION_UPDATE_INFO, $info);
-	return dog__ajax_response_ok($response, array('updates' => $is_newer));
-}
-
-function dog_ajax__update() {
-	$info = dog__get_option(DOG__OPTION_UPDATE_INFO);
-	if ($info && $info->version && $info->about && $info->download) {
-		$info->update = 1;
-		dog__update_option(DOG__OPTION_UPDATE_INFO, $info);
-		$link = '<a href="/wp-admin/update-core.php">' . dog__txt('Apasă aici pentru a porni actualizarea') . '</a>';
-		return dog__ajax_response_ok(null, array('message' => dog__txt('Noua versiune este disponibilă în pagina de actualizări.') . ' ' . $link));
-	} else {
-		return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Informațiile necesare actualizării nu sunt complete. Te rugăm inițiază o nouă verificare')));
-	}
-}
-
-function dog_ajax__security() {
-	$pattern = '/^.+\.php$/i';
-	$parent_php_files = dog__search_files(get_template_directory(), $pattern);
-	$child_php_files = dog__search_files(get_stylesheet_directory(), $pattern);
-	$php_files = array_merge($parent_php_files, $child_php_files);
-	$issues = array();
-	if ($php_files) {
-		foreach ($php_files as $f) {
-			$fragment = str_replace(get_theme_root(), '', $f);
-			$url = get_theme_root_uri() . $fragment;
-			$response = wp_remote_get($url);
-			if ($response && (!empty($response['body']) || $response['response']['code'] != 404)) {
-				array_push($issues, '<a href="' . $url . '" target="_blank">' . $fragment . '</a>');
+	if ($labels) {
+		foreach ($labels as $label) {
+			$key = sanitize_title($label);
+			if (!in_array($key, $keys)) {
+				array_push($content, "pll_register_string('{$key}', '{$label}', '{$name}', true);\n");
+				array_push($keys, $key);
 			}
 		}
 	}
-	$response = dog__txt('Am găsit ${n} fișiere nesecurizate din totalul de ${t}', array('n' => count($issues), 't' => count($php_files)));
+	return $content;
+}
+
+function dog_admin__get_file_output($filename, $tpl_data = null) {
+	$filepath = dog__parent_admin_file_path($filename);
+	return dog__get_file_output($filepath, $tpl_data);
+}
+
+function dog_ajax__security() {
+	$issues = $all = array();
+	$themes = dog__get_dog_theme_names();
+	if ($themes) {
+		foreach ($themes as $theme) {
+			$all = array_merge($all, dog_admin__check_path_security(get_theme_root() . "/{$theme}", $issues));
+		}
+	}
+	$plugins = dog__get_dog_plugin_names();
+	if ($plugins) {
+		foreach ($plugins as $plugin) {
+			$all = array_merge($all, dog_admin__check_path_security(WP_PLUGIN_DIR . "/{$plugin}", $issues));
+		}
+	}
+	$response = dog__txt('Am găsit ${n} fișiere nesecurizate din totalul de ${t}', array('n' => count($issues), 't' => count($all)));
 	if ($issues) {
 		$response = dog__string_to_html_tag($response, 'p');
 		$response .= implode('<br />', $issues);
@@ -183,8 +135,30 @@ function dog_ajax__security() {
 	return dog__ajax_response_ok($response);
 }
 
+function dog_admin__check_path_security($path, &$issues = array()) {
+	$pattern = '/^.+\.php$/i';
+	$ignore_files = array('_pll_labels.php');
+	$php_files = dog__search_files($path, $pattern);
+	if ($php_files) {
+		foreach ($php_files as $i => $file) {
+			$name = basename($file);
+			if (in_array($name, $ignore_files)) {
+				unset($php_files[$i]);
+				continue;
+			}
+			$fragment = str_replace(WP_CONTENT_DIR, '', $file);
+			$url = WP_CONTENT_URL . $fragment;
+			$response = wp_remote_get($url);
+			if ($response && (!empty($response['body']) || $response['response']['code'] != 404)) {
+				array_push($issues, '<a href="' . $url . '" target="_blank">' . $fragment . '</a>');
+			}
+		}
+	}
+	return $php_files;
+}
+
 function dog_admin__minify_form() {
-	return dog_admin__get_include_contents('form-minify.php');
+	return dog_admin__get_file_output('form-minify.php');
 }
 
 function dog_admin__minify_styles_value($field_name) {
@@ -343,35 +317,6 @@ function dog_admin__enqueue_assets($hook) {
 	wp_enqueue_script('admin_scripts', dog__parent_admin_url('scripts.js'), array('base_scripts'), null, true);
 }
 
-function dog_admin__requires() {
-	if (!is_plugin_active('dog/dog.php')) {
-		add_action('admin_notices', 'dog_admin__base_plugin_notice');
-		dog_admin__switch_theme();
-	}
-}
-
-function dog_admin__switch_theme() {
-	global $dog__themes;
-	$themes = wp_get_themes();
-	if ($themes) {
-		foreach ($themes as $name => $data) {
-			if (!in_array($name, $dog__themes)) {
-				switch_theme($name);
-				return;
-			}
-		}
-	}
-}
-
-function dog_admin__base_plugin_notice() {
-	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active</p></div><?php
-}
-
-function dog_admin__base_theme_notice() {
-	?><div class="error"><p>DOG Base theme cannot be used on its own. It is an abstract layer under DOG Extension</p></div><?php
-}
-
-add_action('admin_init', 'dog_admin__requires');
 add_action('admin_menu', 'dog_admin__add_menu');
 add_action('admin_enqueue_scripts', 'dog_admin__enqueue_assets', 99999);
 add_action('wp_ajax_' . DOG_ADMIN__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');

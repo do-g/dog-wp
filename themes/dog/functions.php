@@ -1,8 +1,21 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-require_once(get_template_directory() . '/_config.php');
 
-$dog__themes = array('dog', 'dogx');
+date_default_timezone_set(DOG__TIMEZONE);
+
+if (DOG__ENV == 'dev') {
+	$error_reporting = E_ALL & ~E_NOTICE & ~E_STRICT;
+	if (defined('E_DEPRECATED')) {
+		$error_reporting = $error_reporting & ~E_DEPRECATED;
+	}
+	error_reporting($error_reporting);
+	ini_set('display_errors', 1);
+	ini_set('display_startup_errors', 1);
+} else {
+	error_reporting(0);
+	ini_set('display_errors', 0);
+	ini_set('display_startup_errors', 0);
+}
 
 $dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
 	'AboutPage' => array('despre', 'about'),
@@ -31,226 +44,38 @@ $dog__form_field_types = dog__extend_with('form_field_types', array(
 	)
 ));
 
-$dog_admin__sections = dog__extend_with('admin_sections', array(
-	DOG_ADMIN__SECTION_MINIFY => dog__txt('Comprimare fișiere'),
-	DOG_ADMIN__SECTION_GENERATE_LABELS => dog__txt('Etichete'),
-	DOG_ADMIN__SECTION_UPDATE => dog__txt('Actualizări temă'),
-	DOG_ADMIN__SECTION_SECURITY => dog__txt('Verificări securitate'),
-));
-
 $dog_admin__custom_nonces = dog__extend_with('nonces', array(
-	DOG_ADMIN__NONCE_UPDATE_CHECK,
-	DOG_ADMIN__NONCE_UPDATE_INFO,
 	DOG_ADMIN__NONCE_REFRESH_MINIFY,
 	DOG_ADMIN__NONCE_DELETE_MINIFY,
 ));
 
-$dog__alert_messages = dog__extend_with('alert_messages', array(
-	DOG__ALERT_KEY_RESPONSE_ERROR => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat. Codul de eroare este ${code}'),
-	DOG__ALERT_KEY_SERVER_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
-	DOG__ALERT_KEY_CLIENT_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
-	DOG__ALERT_KEY_FORM_INVALID => dog__txt('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
-	DOG__ALERT_KEY_EMPTY_SELECTION => dog__txt('Trebuie să selectezi cel puțin o înregistrare'),
-));
-
 $dog__form_errors = array();
 $dog__post_data = array();
-$dog__update_check_done = false;
 
-/***** utilitary methods *****/
-
-function dog__is_env_dev() {
-	return DOG__ENV == DOG__ENV_DEVELOPMENT;
+function dog__get_admin_sections() {
+	return dog__extend_with('admin_sections', array(
+		DOG_ADMIN__SECTION_MINIFY => dog__txt('Comprimare fișiere'),
+		DOG_ADMIN__SECTION_GENERATE_LABELS => dog__txt('Etichete'),
+		DOG_ADMIN__SECTION_SECURITY => dog__txt('Verificări securitate'),
+	));
 }
 
-function dog__is_env_pro() {
-	return DOG__ENV == DOG__ENV_PRODUCTION;
+function dog__get_alert_messages() {
+	return dog__extend_with('alert_messages', array(
+		DOG__ALERT_KEY_RESPONSE_ERROR => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat. Codul de eroare este ${code}'),
+		DOG__ALERT_KEY_SERVER_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
+		DOG__ALERT_KEY_CLIENT_FAILURE => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
+		DOG__ALERT_KEY_FORM_INVALID => dog__txt('Formularul nu poate fi validat. Te rugăm să corectezi erorile'),
+		DOG__ALERT_KEY_EMPTY_SELECTION => dog__txt('Trebuie să selectezi cel puțin o înregistrare'),
+	));
 }
 
-function dog__value_or_empty($value, $condition) {
-	return $condition ? $value : '';
-}
-
-function dog__safe_url($uri, $display = false) {
-	return $display ? esc_url($uri) : esc_url_raw($uri);
-}
-
-function dog__debug_queries() {
-	global $wpdb;
-	echo "<pre>";
-   	print_r($wpdb->queries);
-   	echo "</pre>";
-}
-
-function dog__theme_version($theme_name = null) {
-	$theme = wp_get_theme($theme_name);
-	return $theme->get('Version');
-}
-
-function dog__parent_theme_version() {
-	return dog__theme_version(DOG__THEME_NAME);
-}
-
-function dog__string_to_html_tag($string, $tag) {
-	return "<{$tag}>{$string}</{$tag}>";
-}
-
-function dog__search_files($folder, $pattern) {
-    $dir = new RecursiveDirectoryIterator($folder);
-    $ite = new RecursiveIteratorIterator($dir);
-    $files = new RegexIterator($ite, $pattern, RegexIterator::GET_MATCH);
-    $fileList = array();
-    foreach($files as $file) {
-        $fileList = array_merge($fileList, $file);
-    }
-    return $fileList;
-}
-
-function dog__array_merge_unique($arr1, $arr2) {
-	return array_unique(array_merge($arr1, $arr2));
-}
-
-/***** url methods *****/
-
-function dog__theme_url_fragment($file_name) {
-	return '/' . ltrim($file_name, '/');
-}
-
-function dog__theme_url($file_name, $display = true) {
-	return dog__safe_url(get_stylesheet_directory_uri() . dog__theme_url_fragment($file_name), $display);
-}
-
-function dog__parent_theme_url($file_name, $display = true) {
-	return dog__safe_url(get_template_directory_uri() . dog__theme_url_fragment($file_name), $display);
-}
-
-function dog__asset_url($file_name, $display = true) {
-	return DOG__STATIC_ASSETS_URL ? dog__safe_url(DOG__STATIC_ASSETS_URL . dog__theme_url_fragment($file_name), $display) : dog__theme_url($file_name, $display);
-}
-
-function dog__parent_asset_url($file_name, $display = true) {
-	return DOG__STATIC_PARENT_ASSETS_URL ? dog__safe_url(DOG__STATIC_PARENT_ASSETS_URL . dog__theme_url_fragment($file_name), $display) : dog__parent_theme_url($file_name, $display);
-}
-
-function dog__img_url_fragment($image_file_name) {
-	return dog__theme_url_fragment('images/' . ltrim($image_file_name, '/'));
-}
-
-function dog__img_url($image_file_name, $display = true) {
-	return dog__asset_url(dog__img_url_fragment($image_file_name), $display);
-}
-
-function dog__parent_img_url($image_file_name, $display = true) {
-	return dog__parent_asset_url(dog__img_url_fragment($image_file_name), $display);
-}
-
-function dog__js_url_fragment($script_file_name) {
-	return dog__theme_url_fragment('js/' . ltrim($script_file_name, '/') . '.js');
-}
-
-function dog__js_url($script_file_name, $display = true) {
-	return dog__asset_url(dog__js_url_fragment($script_file_name), $display);
-}
-
-function dog__parent_js_url($script_file_name, $display = true) {
-	return dog__parent_asset_url(dog__js_url_fragment($script_file_name), $display);
-}
-
-function dog__css_url_fragment($style_file_name) {
-	return dog__theme_url_fragment('css/' . ltrim($style_file_name, '/') . '.css');
-}
-
-function dog__css_url($style_file_name, $display = true) {
-	return dog__asset_url(dog__css_url_fragment($style_file_name), $display);
-}
-
-function dog__parent_css_url($style_file_name, $display = true) {
-	return dog__parent_asset_url(dog__css_url_fragment($style_file_name), $display);
-}
-
-function dog__admin_url_fragment($file_name) {
-	return dog__theme_url_fragment(DOG__ADMIN_DIR . '/' . ltrim($file_name, '/'));
-}
-
-function dog__admin_url($file_name, $display = true) {
-	return dog__theme_url(dog__admin_url_fragment($file_name), $display);
-}
-
-function dog__parent_admin_url($file_name, $display = true) {
-	return dog__parent_theme_url(dog__admin_url_fragment($file_name), $display);
-}
-
-function dog__compressed_asset_url_fragment($asset_name) {
-	return dog__theme_url_fragment(DOG__COMPRESSED_ASSET_DIR . '/' . ltrim($asset_name, '/'));
-}
-
-function dog__compressed_asset_url($asset_name, $display = true) {
-	return dog__asset_url(dog__compressed_asset_url_fragment($asset_name), $display);
-}
-
-/***** path methods *****/
-
-function dog__file_path($filename) {
-	return get_stylesheet_directory() . dog__theme_url_fragment($filename);
-}
-
-function dog__parent_file_path($filename) {
-	return get_template_directory() . dog__theme_url_fragment($filename);
-}
-
-function dog__admin_file_path($filename) {
-	return dog__file_path(dog__admin_url_fragment($filename));
-}
-
-function dog__parent_admin_file_path($filename) {
-	return dog__parent_file_path(dog__admin_url_fragment($filename));
-}
-
-/***** language methods *****/
-
-function dog__lang_url($slug_or_id, $type = 'page', $display = true) {
-	$post_name = trim($slug_or_id, '/');
-	$post_id = (int) $post_name;
-	if (!dog__is_default_language()) {
-		if (!$post_id) {
-			$post = get_page_by_path($post_name, OBJECT, $type);
-			$post_id = $post->ID;
-		}
-		if ($post_id) {
-			$trans_id = pll_get_post($post_id, dog__active_language());
-			$trans = get_post($trans_id);
-			$post_name = $trans->post_name;
-		}
-	}
-	return dog__safe_url('/' . $post_name, $display);
-}
-
-function dog__extract_labels($string) {
-	$labels = array();
-	preg_match_all("/dog__txt\('(.*?)'/", $string, $matches1);
-	$labels = array_merge($labels, $matches1[1]);
-	preg_match_all("/dog__txt_attr\('(.*?)'/", $string, $matches2);
-	$labels = array_merge($labels, $matches2[1]);
-	preg_match_all("/dog__txt_raw\('(.*?)'/", $string, $matches3);
-	$labels = array_merge($labels, $matches3[1]);
-	return $labels;
-}
-
-function dog__extract_file_labels($filepath) {
-	return dog__extract_labels(file_get_contents($filepath));
+function dog__list_themes() {
+	return array_map('trim', explode(',', DOG__THEMES));
 }
 
 function dog__include_template($filename, $tpl_data = null) {
 	include(locate_template($filename . '.php'));
-}
-
-function dog__get_include_contents($filepath, $tpl_data = null) {
-    if (is_file($filepath)) {
-        ob_start();
-        include $filepath;
-        return ob_get_clean();
-    }
-    return false;
 }
 
 function dog__show_content($template) {
@@ -271,7 +96,7 @@ function dog__body_class($user_classes = array()) {
 		}
 	}
 	$classes = $classes ? $classes : array('uri--acasa');
-	if (dog__plugin_is_active('polylang')) {
+	if (dog__lang_plugin_is_active()) {
 		array_push($classes, 'lang--' . dog__active_language());
 		if (!dog__is_default_language()) {
 			$obj = get_queried_object();
@@ -301,62 +126,8 @@ function dog__body_class($user_classes = array()) {
 	return esc_attr(implode(' ', array_merge(get_body_class(), $classes)));
 }
 
-function dog__website_language() {
-	return strtolower(reset(explode('-', get_bloginfo('language'))));
-}
-
-function dog__default_language() {
-	return dog__plugin_is_active('polylang') ? pll_default_language() : dog__website_language();
-}
-
-function dog__active_language() {
-	return dog__plugin_is_active('polylang') ? pll_current_language() : dog__website_language();
-}
-
-function dog__is_active_language($lang) {
-	return $lang == dog__active_language();
-}
-
-function dog__is_default_language($lang = null) {
-	$lang = $lang ? $lang : dog__active_language();
-	return $lang == dog__default_language();
-}
-
-function dog__plugin_is_active($plugin) {
-	switch (strtolower($plugin)) {
-		case 'polylang':
-			return function_exists('pll_register_string');
-	}
-	return false;
-}
-
-function dog__strip_shortcode($code, $content) {
-    global $shortcode_tags;
-    $stack = $shortcode_tags;
-    $shortcode_tags = array($code => 1);
-    $content = strip_shortcodes($content);
-    $shortcode_tags = $stack;
-    return $content;
-}
-
 function dog__show_form_field($data) {
 	dog__include_template('_form-field', array('form_field_data' => $data));
-}
-
-function dog__attributes_array_to_html($list) {
-	$html = array();
-	if ($list) {
-		$special = array('checked', 'selected');
-		foreach ($list as $key => $value) {
-			if (in_array($key, $special) && !$value) {
-				continue;
-			}
-			$key = sanitize_key($key);
-			$value = esc_attr($value);
-			array_push($html, "{$key}=\"{$value}\"");
-		}
-	}
-	return ' ' . implode(" ", $html);
 }
 
 function dog__get_field_errors($field_name, $type = null) {
@@ -482,37 +253,6 @@ function dog__field_has_value_and_valid($field_name) {
 	return dog__get_post_value($field_name) && !dog__get_field_errors($field_name);
 }
 
-function dog__is_post($key = null) {
-	return strtoupper($_SERVER['REQUEST_METHOD']) == 'POST' && ($key ? isset($_POST[$key]) : 1);
-}
-
-function dog__is_get($key = null) {
-	return strtoupper($_SERVER['REQUEST_METHOD']) == 'GET' && ($key ? sanitize_text_field($key) : 1);
-}
-
-function dog__redirect($location, $status = null) {
-	wp_redirect($location, $status);
-	exit;
-}
-
-function dog__safe_redirect($location, $status = null) {
-	wp_safe_redirect($location, $status);
-	exit;
-}
-
-function dog__uri($uri, $exclude_query_string = false, $trim_end_slash = false, $display = false) {
-	if ($exclude_query_string) {
-		$parts = explode('?', $uri);
-		$uri = $parts[0];
-	}
-	$uri = $trim_end_slash ? ($uri != '/' ? rtrim($uri, '/') : $uri) : $uri;
-	return dog__safe_url($uri, $display);
-}
-
-function dog__current_uri($exclude_query_string = false, $trim_end_slash = false, $display = false) {
-	return dog__uri($_SERVER['REQUEST_URI'], $exclude_query_string, $trim_end_slash);
-}
-
 function dog__contact_url() {
 	return dog__lang_url('contact');
 }
@@ -547,18 +287,6 @@ function dog__validate_regex_field($field_name, $regex, $error_message = null) {
 			dog__set_field_error($field_name, $error_message, DOG__FIELD_ERROR_REGEX);
 		}
 	}
-}
-
-function dog__get_special_attr_value($key, $condition) {
-	return $condition ? $key : false;
-}
-
-function dog__get_checked_attr_value($condition) {
-	return dog__get_special_attr_value('checked', $condition);
-}
-
-function dog__get_selected_attr_value($condition) {
-	return dog__get_special_attr_value('selected', $condition);
 }
 
 function dog__nonce_field($action) {
@@ -601,37 +329,9 @@ function dog__honeypot_field() {
 	}
 }
 
-function dog__string_to_key($value, $prefix = null, $suffix = null) {
-	$value = strtolower($value);
-	$value = preg_replace('/[-]+/', '_', $value);
-	$value = preg_replace('/\s+/', '_', $value);
-	$value = preg_replace('/[^a-z0-9_]/', '', $value);
-  	return ($prefix ? $prefix : '') . $value . ($suffix ? $suffix : '');
-}
-
 function dog__get_email_template($name, $lang = null) {
 	$tpl_name = $name . ($lang ? "--{$lang}" : '') . '.tpl';
 	return file_get_contents(get_stylesheet_directory_uri() . "/tpl/{$tpl_name}");
-}
-
-function dog__replace_template_vars($template, $data) {
-	if ($template && $data) {
-		foreach ($data as $key => $value) {
-			$template = str_replace('${' . $key . '}', $value, $template);
-		}
-	}
-	return $template;
-}
-
-function dog__site_domain($strict = false) {
-	$parts = explode('//', trim(site_url(), '/'));
-	if ($strict) {
-		$parts = explode('.', $parts[1]);
-		$parts = array_slice($parts, -2);
-		return implode('.', $parts);
-	} else {
-		return $parts[1];
-	}
 }
 
 function dog__get_mail_errors() {
@@ -695,23 +395,7 @@ function dog__merge_form_field_classes($default_class, $user_class) {
 
 function dog__post_thumbnail() {
 	$id = get_post_thumbnail_id();
-	return esc_url($id ? reset(wp_get_attachment_image_src($id, 'full')) : dog__img_url(DOG__POST_THUMBNAIL_DEFAULT));
-}
-
-function dog__txt_raw($label, $vars = null, $lang = null) {
-	$txt = dog__plugin_is_active('polylang') ? ($lang ? pll_translate_string($label, $lang) : pll__($label)) : $label;
-	if ($vars && is_array($vars)) {
-		$txt = dog__replace_template_vars($txt, $vars);
-	}
-	return $txt;
-}
-
-function dog__txt($label, $vars = null, $lang = null) {
-	return esc_html(dog__txt_raw($label, $vars, $lang));
-}
-
-function dog__txt_attr($label, $vars = null, $lang = null) {
-	return esc_attr(dog__txt_raw($label, $vars, $lang));
+	return esc_url($id ? reset(wp_get_attachment_image_src($id, 'full')) : null);
 }
 
 function dog__schema_page_type() {
@@ -753,18 +437,6 @@ function dog__override_template($template) {
 	}
 	$dog__current_template = $template;
 	return $template;
-}
-
-function dog__log($data, $file = null) {
-	if (is_array($data) || is_object($data)) {
-		$data = var_export($data, true);
-	}
-	if ($file) {
-		$file = get_theme_root() . '/../' . $file . '.log';
-		return @fwrite(@fopen($file, 'a'), $data . "\n");
-	} else {
-		return error_log($data);
-	}
 }
 
 function dog__set_transient($name, $value, $expiration, $extra_data = array()) {
@@ -924,7 +596,7 @@ function dog__custom_image_sizes($sizes) {
 }
 
 function dog__alert_message($key, $params = null) {
-	global $dog__alert_messages;
+	$dog__alert_messages = dog__get_alert_messages();
 	return dog__replace_template_vars($dog__alert_messages[$key], $params);
 }
 
@@ -1019,6 +691,33 @@ function dog__clear_page_cache() {
 	}
 }
 
+function dog__requires() {
+	if (!function_exists('dog__txt')) {
+		function dog__txt($label) {
+			return $label;
+		}
+		add_action('admin_notices', 'dog__requires_notice');
+		dog__theme_switch();
+	}
+}
+
+function dog__theme_switch() {
+	$dog__themes = dog__list_themes();
+	$themes = wp_get_themes();
+	if ($themes) {
+		foreach ($themes as $name => $data) {
+			if (!in_array($name, $dog__themes)) {
+				switch_theme($name);
+				return;
+			}
+		}
+	}
+}
+
+function dog__requires_notice() {
+	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active. Unable to activate theme</p></div><?php
+}
+
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
 	add_filter('json_jsonp_enabled', '__return_false');
@@ -1043,13 +742,14 @@ add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');
 add_action('wp_ajax_nopriv_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
 add_action('wp_ajax_' . DOG__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');
+add_action('after_switch_theme', 'dog__requires');
 dog__call_x_function('hooks');
 
 if (is_admin()) {
-	require_once(dog__parent_admin_file_path('functions.php'));
+	require_once(get_template_directory() . '/admin/functions.php');
 }
 
-$dog__pll_labels_file = dog__file_path('_pll_labels.php');
-if (is_file($dog__pll_labels_file) && dog__plugin_is_active('polylang')) {
-	require_once($dog__pll_labels_file);
+$dog__theme_labels_file = get_stylesheet_directory() . '/_pll_labels.php';
+if (is_file($dog__theme_labels_file) && dog__lang_plugin_is_active()) {
+	require_once($dog__theme_labels_file);
 }

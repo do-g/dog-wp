@@ -1,6 +1,6 @@
 <?php
 
-require_once(realpath(dirname(__FILE__)) . '/../dog/_block-direct-access.php');
+require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
 class Dog_Updater {
 
@@ -16,6 +16,7 @@ class Dog_Updater {
 			return;
 		}
 		add_action('init', array(__CLASS__, 'setup'));
+		add_action('plugins_loaded', array(__CLASS__, 'register_labels'));
 		self::$_initialized = true;
 	}
 
@@ -28,6 +29,7 @@ class Dog_Updater {
 			add_action('delete_site_transient_update_themes', array(__CLASS__, 'clear_theme_updates'));
 			add_action('admin_post_dog_save_updater_options', array(__CLASS__, 'save_options'));
 			add_action('admin_menu', array(__CLASS__, 'add_to_settings_menu'));
+			add_filter('plugin_action_links_' . dog__get_full_plugin_name_from_path(__FILE__), array(__CLASS__, 'settings_link'));
 		} else {
 			add_action('admin_init', array(__CLASS__, 'requires'));
 		}
@@ -59,7 +61,7 @@ class Dog_Updater {
 		$themes = wp_get_themes();
 		if ($themes) {
 			foreach ($themes as $name => $data) {
-				if (in_array($name, dog__theme_list())) {
+				if (in_array($name, dog__get_dog_theme_names())) {
 					if (self::check_update(self::TYPE_THEMES, $name, $data->Version)) {
 						$do_update = true;
 					}
@@ -75,13 +77,15 @@ class Dog_Updater {
 		$update_info[$type] = isset($update_info[$type]) ? $update_info[$type] : array();
 		$info = wp_remote_get(self::get_update_url($type, $name));
 		if (!is_array($info)) {
-			self::add_error("Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat pentru obiectul '{$name}'");
+			$err_message = dog__txt('Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat pentru obiectul "${name}"', array('name' => $name));
+			self::add_error($err_message);
 			add_action('admin_notices', array(__CLASS__, 'check_failed_notice'));
 			return false;
 		}
 		$info = json_decode($info['body']);
 		if (json_last_error() != JSON_ERROR_NONE) {
-			self::add_error("Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat pentru obiectul '{$name}'");
+			$err_message = dog__txt('Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat pentru obiectul "${name}"', array('name' => $name));
+			self::add_error($err_message);
 			add_action('admin_notices', array(__CLASS__, 'check_failed_notice'));
 			return false;
 		}
@@ -170,13 +174,13 @@ class Dog_Updater {
 		?><div class="wrap">
 			<h1>Opțiuni actualizare</h1>
 			<?php if (isset($_GET['update'])) { ?>
-				<div id='message' class='updated fade is-dismissible'><p><strong><?= $_GET['update'] ? 'Pentru unele module sau teme sunt disponibile versiuni mai noi. <a href="update-core.php">Apasă aici pentru a vedea lista exactă</a>.' : 'Toate modulele și temele sunt actualizate la zi' ?></strong></p></div>
+				<div id='message' class='updated fade is-dismissible'><p><strong><?= $_GET['update'] ? dog__txt('Pentru unele module sau teme sunt disponibile versiuni mai noi') . '. <a href="update-core.php">' . dog__txt('Apasă aici pentru a vedea lista exactă') . '</a>.' : dog__txt('Toate modulele și temele sunt actualizate la zi') ?></strong></p></div>
 			<?php } ?>
 			<form name="form" method="post" action="admin-post.php">
- 		 		<p>Apasă pe butonul de mai jos dacă vrei să verifici actualizările disponibile pentru module și teme DOG.</p>
+ 		 		<p><?= dog__txt('Apasă pe butonul de mai jos dacă vrei să verifici actualizările disponibile pentru module și teme DOG') ?></p>
  		 		<input type="hidden" name="action" value="dog_save_updater_options" />
          		<?php wp_nonce_field( 'dog__up_check' ); ?>
-				<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Verifică actualizări disponibile"></p>
+				<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="<?= dog__txt_attr('Verifică actualizări disponibile') ?>"></p>
 			</form>
 		</div><?php
 	}
@@ -188,10 +192,26 @@ class Dog_Updater {
 		exit;
 	}
 
+	public static function settings_link($links) {
+		$url = get_admin_url() . 'options-general.php?page=dog-updater';
+		$settings_link = '<a href="' . $url . '">' . dog__txt('Setări') . '</a>';
+		array_unshift($links, $settings_link);
+		return $links;
+	}
+
+	/***** REGISTER TRANSLATION LABELS *****/
+
+	public static function register_labels() {
+		$labels_file = realpath(dirname(__FILE__)) . '/_pll_labels.php';
+		if (is_file($labels_file) && function_exists('pll_register_string')) {
+			require_once($labels_file);
+		}
+	}
+
 	/***** REQUIRE DEPENDENCIES *****/
 
 	public static function check() {
-		return function_exists('dog__get_option');
+		return function_exists('dog__txt');
 	}
 
 	public static function requires() {
