@@ -317,6 +317,18 @@ function dog_admin__enqueue_assets($hook) {
 	wp_enqueue_script('admin_scripts', dog__parent_admin_url('scripts.js'), array('base_scripts'), null, true);
 }
 
+function dog_admin__fix_svg_size() {
+	echo '<style>
+	    svg, img[src*=".svg"] {
+	    	min-width: 50px !important;
+	      	min-height: 50px !important;
+	      	max-width: 150px !important;
+	      	max-height: 150px !important;
+	    }
+	</style>';
+}
+
+add_action('admin_head', 'dog_admin__fix_svg_size');
 add_action('admin_menu', 'dog_admin__add_menu');
 add_action('admin_enqueue_scripts', 'dog_admin__enqueue_assets', 99999);
 add_action('wp_ajax_' . DOG_ADMIN__WP_ACTION_AJAX_CALLBACK, 'dog__ajax_handler');

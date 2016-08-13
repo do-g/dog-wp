@@ -718,6 +718,12 @@ function dog__requires_notice() {
 	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active. Unable to activate theme</p></div><?php
 }
 
+function dog__upload_mime_types($mimes) {
+  return array_merge($mimes, dog__extend_with('upload_mime_types', array(
+  	'svg' => 'image/svg+xml'
+  )));
+}
+
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
 	add_filter('json_jsonp_enabled', '__return_false');
@@ -737,6 +743,7 @@ if (!is_admin()) {
 	remove_action('wp_head', 'print_emoji_detection_script', 7);
 	remove_action('wp_print_styles', 'print_emoji_styles');
 }
+add_filter('upload_mimes', 'dog__upload_mime_types');
 add_action('widgets_init', 'dog__widgets_init');
 add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');
