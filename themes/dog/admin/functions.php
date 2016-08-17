@@ -67,7 +67,6 @@ function dog_ajax__generate_labels() {
 			$output = array_merge($output, $labels);
 			$dest = WP_PLUGIN_DIR . "/{$plugin}/_pll_labels.php";
 			file_put_contents($dest, implode('', $output));
-			copy($dest, str_replace('.php', ".{$plugin}.bak", $dog__theme_labels_file));
 		}
 	}
 	$response = dog__txt('Am găsit următoarele etichete (${n}):', array('n' => count($all_labels)));
