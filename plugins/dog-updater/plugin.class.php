@@ -46,14 +46,17 @@ class Dog_Updater {
 		if (!function_exists('get_plugins')) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
-		$do_update = false;
+		$updates = array(
+			'plugins' => array(),
+			'themes' => array(),
+		);
 		$plugins = get_plugins();
 		if ($plugins) {
 			foreach ($plugins as $name => $data) {
 				if (in_array(substr($name, 0, 4), array('dog/', 'dog-'))) {
 					$plugin_name = explode('/', $name);
 					if (self::check_update(self::TYPE_PLUGINS, reset($plugin_name), $data['Version'])) {
-						$do_update = true;
+						array_push($updates['plugins'], $data['Name']);
 					}
 				}
 			}
@@ -63,12 +66,12 @@ class Dog_Updater {
 			foreach ($themes as $name => $data) {
 				if (in_array($name, dog__get_dog_theme_names())) {
 					if (self::check_update(self::TYPE_THEMES, $name, $data->Version)) {
-						$do_update = true;
+						array_push($updates['themes'], $data->Name);
 					}
 				}
 			}
 		}
-		return $do_update;
+		return $updates;
 	}
 
 	public static function check_update($type, $name, $current_version) {
@@ -113,7 +116,7 @@ class Dog_Updater {
 			if (isset($data[$type]) && $data[$type]) {
 				foreach ($data[$type] as $name => $info) {
 					if ($info && $info->version && $info->about && $info->download) {
-						$key = $type == self::TYPE_THEMES ? $name : "{$name}/{$name}.php";
+						$key = $type == self::TYPE_THEMES ? $name : "{$name}/plugin.php";
 						$fields = array(
 							'new_version' => $info->version,
 							'url' => $info->about,
@@ -171,13 +174,32 @@ class Dog_Updater {
 	}
 
 	public static function settings_page() {
+		$message = '';
+		if (isset($_SESSION['dog_up']['updates'])) {
+			$plugins = $_SESSION['dog_up']['updates']['plugins'];
+			if ($plugins) {
+				$message .= dog__txt('Pentru următoarele module sunt disponibile versiuni mai noi: ${list}', array('list' => implode(', ', $plugins)));
+				$message .= '<br />';
+			}
+			$themes = $_SESSION['dog_up']['updates']['themes'];
+			if ($themes) {
+				$message .= dog__txt('Pentru următoarele teme sunt disponibile versiuni mai noi: ${list}', array('list' => implode(', ', $themes)));
+				$message .= '<br />';
+			}
+			if ($message) {
+				$message .= '<a href="update-core.php">' . dog__txt('Apasă aici pentru a vedea lista exactă') . '</a>';
+			} else {
+				$message = dog__txt('Toate modulele și temele sunt actualizate la zi');
+			}
+			unset($_SESSION['dog_up']['updates']);
+		}
 		?><div class="wrap">
 			<h1>Opțiuni actualizare</h1>
-			<?php if (isset($_GET['update'])) { ?>
-				<div id='message' class='updated fade is-dismissible'><p><strong><?= $_GET['update'] ? dog__txt('Pentru unele module sau teme sunt disponibile versiuni mai noi') . '. <a href="update-core.php">' . dog__txt('Apasă aici pentru a vedea lista exactă') . '</a>.' : dog__txt('Toate modulele și temele sunt actualizate la zi') ?></strong></p></div>
+			<?php if ($message) { ?>
+				<div id='message' class='updated'><p><strong><?= $message ?></strong></p></div>
 			<?php } ?>
 			<form name="form" method="post" action="admin-post.php">
- 		 		<p><?= dog__txt('Apasă pe butonul de mai jos dacă vrei să verifici actualizările disponibile pentru module și teme DOG') ?></p>
+ 		 		<p><?= dog__txt('Apasă pe butonul de mai jos pentru a verifica actualizările disponibile pentru module și teme din grupul DOG. Atenție aceste actualizări, deși de dorit, pot afecta compatibilitatea sitului cu modulele de care depinde. Nu este recomandată actualizarea fără consultanță tehnică.') ?></p>
  		 		<input type="hidden" name="action" value="dog_save_updater_options" />
          		<?php wp_nonce_field( 'dog__up_check' ); ?>
 				<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="<?= dog__txt_attr('Verifică actualizări disponibile') ?>"></p>
@@ -187,8 +209,8 @@ class Dog_Updater {
 
 	public static function save_options() {
    		check_admin_referer('dog__up_check');
-   		$res = self::check_for_updates();
-		wp_redirect(admin_url('options-general.php?page=dog-updater&update=' . $res));
+   		$_SESSION['dog_up']['updates'] = self::check_for_updates();
+		wp_redirect(admin_url('options-general.php?page=dog-updater'));
 		exit;
 	}
 
@@ -216,8 +238,8 @@ class Dog_Updater {
 
 	public static function requires() {
         add_action('admin_notices', array(__CLASS__, 'requires_notice'));
-        $plugin_name = basename(dirname(__FILE__));
-        $plugin_name = "{$plugin_name}/{$plugin_name}.php";
+        $plugin_dir = basename(dirname(__FILE__));
+        $plugin_name = "{$plugin_dir}/plugin.php";
         deactivate_plugins($plugin_name);
         if (isset($_GET['activate'])) {
             unset($_GET['activate']);
@@ -226,14 +248,9 @@ class Dog_Updater {
 
 	public static function requires_notice() {
 		$plugin_path = dirname(__FILE__);
-		$plugin_name = basename($plugin_path);
-		$plugin_file = "{$plugin_path}/{$plugin_name}.php";
-		$contents = file_get_contents($plugin_file);
-		if (preg_match('/Plugin Name: (.*)/', $contents, $matches)) {
-			$name = trim($matches[1]);
-			$plugin_name = $name ? $name : $plugin_name;
-		}
-		?><div class="error"><p>Plugin "<?= $plugin_name ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
+		$plugin_file = "{$plugin_path}/plugin.php";
+		$plugin_data = get_plugin_data($plugin_file, false, false);
+		?><div class="error"><p>Plugin "<?= $plugin_data['Name'] ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
 	}
 
 }

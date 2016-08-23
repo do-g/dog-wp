@@ -184,8 +184,8 @@ class Dog_Media_Features {
 
 	public static function requires() {
         add_action('admin_notices', array(__CLASS__, 'requires_notice'));
-        $plugin_name = basename(dirname(__FILE__));
-        $plugin_name = "{$plugin_name}/{$plugin_name}.php";
+        $plugin_dir = basename(dirname(__FILE__));
+        $plugin_name = "{$plugin_dir}/plugin.php";
         deactivate_plugins($plugin_name);
         if (isset($_GET['activate'])) {
             unset($_GET['activate']);
@@ -194,14 +194,9 @@ class Dog_Media_Features {
 
 	public static function requires_notice() {
 		$plugin_path = dirname(__FILE__);
-		$plugin_name = basename($plugin_path);
-		$plugin_file = "{$plugin_path}/{$plugin_name}.php";
-		$contents = file_get_contents($plugin_file);
-		if (preg_match('/Plugin Name: (.*)/', $contents, $matches)) {
-			$name = trim($matches[1]);
-			$plugin_name = $name ? $name : $plugin_name;
-		}
-		?><div class="error"><p>Plugin "<?= $plugin_name ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
+		$plugin_file = "{$plugin_path}/plugin.php";
+		$plugin_data = get_plugin_data($plugin_file, false, false);
+		?><div class="error"><p>Plugin "<?= $plugin_data['Name'] ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
 	}
 
 }

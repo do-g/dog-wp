@@ -10,6 +10,7 @@ class Dog_Shared {
 		if (self::$_initialized) {
 			return;
 		}
+		self::register_session();
 		add_action('plugins_loaded', array(__CLASS__, 'register_labels'));
 		register_deactivation_hook(dog__get_full_plugin_name_from_path(__FILE__), array(__CLASS__, 'deactivate'));
 		self::$_initialized = true;
@@ -17,6 +18,14 @@ class Dog_Shared {
 
 	public static function deactivate() {
 		dog__switch_theme();
+	}
+
+	/***** REGISTER SESSION *****/
+
+	public static function register_session() {
+		if (!session_id()) {
+        	session_start();
+        }
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/
