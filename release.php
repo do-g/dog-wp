@@ -15,7 +15,7 @@ if (!$mode) {
 }
 $full_path = realpath($path);
 $name = basename($full_path);
-$version_file = is_file("{$full_path}/style.css") ? "{$full_path}/style.css" : "{$full_path}/{$name}.php";
+$version_file = is_file("{$full_path}/style.css") ? "{$full_path}/style.css" : "{$full_path}/plugin.php";
 $contents = file_get_contents($version_file);
 if (!preg_match('/Version: (.*)/', $contents, $matches)) {
 	die("Version string not found\n");

@@ -2,7 +2,7 @@
 
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
-class Dog_Media_Taxonomy {
+class Dog_Media_Features {
 
 	const DEFAULT_TAXONOMY_NAME = 'dog__media_cat';
 	const DEFAULT_TAXONOMY_SLUG = 'media';
@@ -21,7 +21,10 @@ class Dog_Media_Taxonomy {
 
 	public static function setup() {
 		if (self::check()) {
-			add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_js'));
+			add_action('wp_ajax_dog_mf', array(__CLASS__, 'ajax_handler'));
+			add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
+			add_filter('post_mime_types', array(__CLASS__, 'filter_mime_types'));
+			add_filter('upload_mimes', array(__CLASS__, 'allow_mime_types'));
 			self::register_media_taxonomy();
 		} else {
 			add_action('admin_init', array(__CLASS__, 'requires'));
@@ -62,7 +65,7 @@ class Dog_Media_Taxonomy {
 		register_taxonomy($config['name'], 'attachment', $config['args']);
 	}
 
-	public static function enqueue_js($hook) {
+	public static function enqueue_assets($hook) {
 		if ($hook != 'upload.php') {
 	        return;
 	    }
@@ -73,19 +76,27 @@ class Dog_Media_Taxonomy {
 		    'orderby' => 'title',
 		    'order' => 'desc',
 		));
-		$media_categories = array(
-			'label' => dog__txt('Comută categoria: ${cat}'),
-			'action_prefix' => self::BULK_ACTION_MEDIA_CATEGORY_PREFIX,
+		$nonces = array();
+		$nonces[dog__nonce_var_key('bulk-category-switch')] = wp_create_nonce(dog__string_to_key('bulk-category-switch'));
+		$media_features = array(
+			'labels' => array(
+				'switch_category' => dog__txt('Comută categoria: ${cat}'),
+				'apply_switch_category' => dog__txt('Aplică'),
+				'no_item_selected' => dog__txt('Nu ai selectat niciun obiect'),
+			),
+			'nonces' => $nonces,
+			'switch_category_action_prefix' => self::BULK_ACTION_MEDIA_CATEGORY_PREFIX,
 			'categories' => array(),
 		);
 		if ($cats) {
 			foreach ($cats as $c) {
-				$media_categories['categories'][$c->term_id] = $c->name;
+				$media_features['categories'][$c->term_id] = $c->name;
 			}
-			$media_categories['categories'][0] = dog__txt('Elimină toate categoriile');
+			$media_features['categories'][0] = dog__txt('Elimină toate categoriile');
 		}
-	    wp_enqueue_script('dog_mt_bulk_actions', dog__plugin_url(__FILE__, 'media.js'), array('jquery'), null, true);
-	    wp_localize_script('dog_mt_bulk_actions', 'dog__media_taxonomy', $media_categories);
+		wp_enqueue_style('dog_mf_styles', dog__plugin_url(__FILE__, 'styles.css'), null, null);
+	    wp_enqueue_script('dog_mf_bulk_actions', dog__plugin_url(__FILE__, 'scripts.js'), array('jquery'), null, true);
+	    wp_localize_script('dog_mf_bulk_actions', 'dog__media_features', $media_features);
 	}
 
 	public static function bulk_action() {
@@ -138,6 +149,22 @@ class Dog_Media_Taxonomy {
 				wp_add_object_terms($id, array($cat_id), $config['name']);
 			}
 		}
+	}
+
+	public static function filter_mime_types($mime_types) {
+		return apply_filters('dog__filter_mime_types', array_merge($mime_types, array(
+			'application/pdf' => array(dog__txt('PDFs'), dog__txt('Manage PDFs'), _n_noop('PDF <span class="count">(%s)</span>', 'PDFs <span class="count">(%s)</span>')),
+		)));
+	}
+
+	public static function allow_mime_types($mime_types) {
+  		return apply_filters('dog__allow_mime_types', array_merge($mime_types, array(
+  			'svg' => 'image/svg+xml'
+  		)));
+	}
+
+	public static function ajax_handler() {
+
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

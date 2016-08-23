@@ -96,10 +96,18 @@ function dog__body_class($user_classes = array()) {
 		}
 	}
 	$classes = $classes ? $classes : array('uri--acasa');
+	$obj = get_queried_object();
+	if ($obj->ID) {
+		$tags = get_the_tags($obj->ID);
+	}
+	if ($tags) {
+		foreach ($tags as $t) {
+			array_push($classes, "tag--{$t->slug}");
+		}
+	}
 	if (dog__lang_plugin_is_active()) {
 		array_push($classes, 'lang--' . dog__active_language());
 		if (!dog__is_default_language()) {
-			$obj = get_queried_object();
 			if ($obj->cat_ID) {
 				$translated_id = pll_get_term($obj->cat_ID, dog__default_language());
 				$translated = get_category($translated_id);
@@ -718,12 +726,6 @@ function dog__requires_notice() {
 	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active. Unable to activate theme</p></div><?php
 }
 
-function dog__upload_mime_types($mimes) {
-  return array_merge($mimes, dog__extend_with('upload_mime_types', array(
-  	'svg' => 'image/svg+xml'
-  )));
-}
-
 if (!is_admin()) {
 	add_filter('json_enabled', '__return_false');
 	add_filter('json_jsonp_enabled', '__return_false');
@@ -743,7 +745,6 @@ if (!is_admin()) {
 	remove_action('wp_head', 'print_emoji_detection_script', 7);
 	remove_action('wp_print_styles', 'print_emoji_styles');
 }
-add_filter('upload_mimes', 'dog__upload_mime_types');
 add_action('widgets_init', 'dog__widgets_init');
 add_action('after_setup_theme', 'dog__theme_setup');
 add_action('init', 'dog__init');

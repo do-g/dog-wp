@@ -38,7 +38,7 @@ function dog__get_plugin_name_from_path($plugin_file_path) {
 
 function dog__get_full_plugin_name_from_path($plugin_file_path) {
 	$plugin_name = dog__get_plugin_name_from_path($plugin_file_path);
-	return "{$plugin_name}/{$plugin_name}.php";
+	return "{$plugin_name}/plugin.php";
 }
 
 function dog__switch_theme() {

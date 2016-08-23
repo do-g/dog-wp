@@ -1,0 +1,8 @@
+select.bulk-action.switch-category {
+	max-width: 200px;
+	display: inline-block !important;
+}
+
+#dog-mf-grid-bulk-action {
+	margin: 11px 10px 11px 0;
+}
