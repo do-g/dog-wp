@@ -4,7 +4,9 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
 class Dog_Sample {
 
+	const PLUGIN_SLUG = 'dog-sample';
 	private static $_initialized = false;
+	private static $_dependencies = array();
 
 	public static function init() {
 		if (self::$_initialized) {
@@ -34,12 +36,23 @@ class Dog_Sample {
 
 	/***** REQUIRE DEPENDENCIES *****/
 
-	public static function check() {
-		return function_exists('dog__txt');
+	public static function requires($dependencies) {
+		self::$_dependencies = $dependencies;
 	}
 
-	public static function requires() {
-        add_action('admin_notices', array(__CLASS__, 'requires_notice'));
+	public static function check() {
+		if (self::$_dependencies) {
+			foreach (self::$_dependencies as $d) {
+				if (!class_exists($d)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public static function depends() {
+        add_action('admin_notices', array(__CLASS__, 'depends_notice'));
         $plugin_dir = basename(dirname(__FILE__));
         $plugin_name = "{$plugin_dir}/plugin.php";
         deactivate_plugins($plugin_name);
@@ -48,11 +61,11 @@ class Dog_Sample {
         }
 	}
 
-	public static function requires_notice() {
+	public static function depends_notice() {
 		$plugin_path = dirname(__FILE__);
 		$plugin_file = "{$plugin_path}/plugin.php";
 		$plugin_data = get_plugin_data($plugin_file, false, false);
-		?><div class="error"><p>Plugin "<?= $plugin_data['Name'] ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
+		?><div class="error"><p>Plugin <b><?= $plugin_data['Name'] ?></b> requires the following plugins to be installed and active: <b><?= str_replace('_', ' ', implode('</b>, <b>', self::$_dependencies)) ?></b></p></div><?php
 	}
 
 }

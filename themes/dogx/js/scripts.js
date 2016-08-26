@@ -1,5 +1,3 @@
-var $d = new dog__shared_lib();
-
 $d.set_webfonts({
   google: {
     families: []

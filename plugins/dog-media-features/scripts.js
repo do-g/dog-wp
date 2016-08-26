@@ -1,5 +1,5 @@
 jQuery(document).ready(function(){
-	if (!dog__media_features || !dog__media_features.categories) {
+	if (!dog__mf || !dog__mf.categories) {
 		console.log('no media taxonomies found');
 		return;
 	}
@@ -11,30 +11,54 @@ jQuery(document).ready(function(){
 			id: 'dog-mf-grid-bulk-action',
 			class: 'attachment-filters bulk-action switch-category'
 		});
+		var $o = jQuery('<option></option>').appendTo($select);
+		$o.attr('value', -1);
+		$o.text(dog__mf.labels.bulk_actions);
 		$button = jQuery('<button></button>').appendTo('.media-toolbar-secondary');
 		$button.attr({
 			type: 'button',
 			class: 'button media-button button-primary button-large apply-selected-button'
-		}).text(dog__media_features.labels.apply_switch_category).click(dog__mf_switch_category);
+		}).text(dog__mf.labels.apply_switch_category).click(dog__mf_switch_category);
 	}
-	for (var i in dog__media_features.categories) {
+	for (var i in dog__mf.categories) {
 		var $option = jQuery('<option></option>').appendTo($select);
-		$option.attr('value', dog__media_features.switch_category_action_prefix + i);
+		$option.attr('value', dog__mf.switch_category_action_prefix + i);
 		if (!parseInt(i)) {
-			$option.text(dog__media_features.categories[i]);
+			$option.text(dog__mf.categories[i]);
 		} else {
-			$option.text(dog__media_features.labels.switch_category.replace('${cat}', dog__media_features.categories[i]));
+			$option.text(dog__mf.labels.switch_category.replace('${cat}', dog__mf.categories[i]));
 		}
 	}
 });
 
 function dog__mf_switch_category() {
+	$s.hide_admin_errors();
+	var action = jQuery('#dog-mf-grid-bulk-action').val();
+	if (action == -1) {
+		return $s.show_admin_error(dog__mf.labels.no_action_selected);
+	}
 	var $items = jQuery('.attachments > li.selected');
 	if (!$items.size()) {
-		return alert(dog__media_features.labels.no_item_selected);
+		return $s.show_admin_error(dog__mf.labels.no_item_selected);
 	}
 	var selected = jQuery.map($items, function(elem){
 		return jQuery(elem).attr('data-id');
 	});
-	console.log(selected);
+	$s.ajax_request({
+		media: selected,
+		custom_action: action,
+		method: 'Dog_Media_Features::update_categories'
+	}, null, {
+		done: function (response, is_error) {
+			if (is_error) {
+				$s.show_admin_error(response.message);
+			} else {
+				$s.show_admin_message(dog__mf.labels.update_complete);
+			}
+			jQuery('.select-mode-toggle-button').click();
+		},
+		fail: function (textStatus, errorThrown) {
+			$s.show_admin_error(dog__sh.alert_request_error);
+		}
+});
 }

@@ -4,10 +4,12 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
 class Dog_Media_Features {
 
+	const PLUGIN_SLUG = 'dog-media-features';
 	const DEFAULT_TAXONOMY_NAME = 'dog__media_cat';
 	const DEFAULT_TAXONOMY_SLUG = 'media';
 	const BULK_ACTION_MEDIA_CATEGORY_PREFIX = 'toggle_category__';
 	private static $_initialized = false;
+	private static $_dependencies = array();
 
 	public static function init() {
 		if (self::$_initialized) {
@@ -21,10 +23,11 @@ class Dog_Media_Features {
 
 	public static function setup() {
 		if (self::check()) {
-			add_action('wp_ajax_dog_mf', array(__CLASS__, 'ajax_handler'));
+			add_action('admin_head', array(__CLASS__, 'fix_svg_size'));
 			add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
 			add_filter('post_mime_types', array(__CLASS__, 'filter_mime_types'));
 			add_filter('upload_mimes', array(__CLASS__, 'allow_mime_types'));
+			add_filter('dog__sh_js_nonces', array(__CLASS__, 'nonces'));
 			self::register_media_taxonomy();
 		} else {
 			add_action('admin_init', array(__CLASS__, 'requires'));
@@ -32,7 +35,7 @@ class Dog_Media_Features {
 	}
 
 	private static function config() {
-		return apply_filters('dog__media_taxonomy_config', array(
+		return apply_filters('dog__mf_config', array(
 			'name' => self::DEFAULT_TAXONOMY_NAME,
 			'args' => array(
 				'labels' => array(
@@ -83,6 +86,9 @@ class Dog_Media_Features {
 				'switch_category' => dog__txt('Comută categoria: ${cat}'),
 				'apply_switch_category' => dog__txt('Aplică'),
 				'no_item_selected' => dog__txt('Nu ai selectat niciun obiect'),
+				'no_action_selected' => dog__txt('Nu ai selectat nicio acțiune'),
+				'update_complete' => dog__txt('Categoriile au fost modificate'),
+				'bulk_actions' => dog__txt('Acțiuni în masă'),
 			),
 			'nonces' => $nonces,
 			'switch_category_action_prefix' => self::BULK_ACTION_MEDIA_CATEGORY_PREFIX,
@@ -94,28 +100,35 @@ class Dog_Media_Features {
 			}
 			$media_features['categories'][0] = dog__txt('Elimină toate categoriile');
 		}
-		wp_enqueue_style('dog_mf_styles', dog__plugin_url(__FILE__, 'styles.css'), null, null);
-	    wp_enqueue_script('dog_mf_bulk_actions', dog__plugin_url(__FILE__, 'scripts.js'), array('jquery'), null, true);
-	    wp_localize_script('dog_mf_bulk_actions', 'dog__media_features', $media_features);
+		wp_enqueue_style('dog_mf_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_sh_styles_shared'), null);
+	    wp_enqueue_script('dog_mf_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts_shared'), null, true);
+	    wp_localize_script('dog_mf_scripts', 'dog__mf', $media_features);
+	}
+
+	public static function nonces($nonces) {
+		return array_merge($nonces, dog__to_nonces(array(
+			'Dog_Media_Features::update_categories'
+		)));
+	}
+
+	public static function fix_svg_size() {
+		echo '<style>
+			    svg, img[src*=".svg"] {
+			    	min-width: 50px !important;
+			      	min-height: 50px !important;
+			      	max-width: 150px !important;
+			      	max-height: 150px !important;
+			    }
+			</style>';
 	}
 
 	public static function bulk_action() {
 		if (!isset($_REQUEST['action'])) {
 			return;
 		}
-		$bulk_action = $_REQUEST['action'] != -1 ? $_REQUEST['action'] : $_REQUEST['action2'];
-		$delimiter = '__';
-		$pos = strpos($bulk_action, $delimiter);
-		if ($pos === false) {
-			return;
-		}
-		$custom_action = substr($bulk_action, 0, $pos);
-		if (!$custom_action) {
-			return;
-		}
-		$action_data = substr($bulk_action, $pos + strlen($delimiter));
 		check_admin_referer('bulk-media');
-		call_user_func(array(__CLASS__, 'bulk_action_' . $custom_action), $action_data);
+		$bulk_action = $_REQUEST['action'] != -1 ? $_REQUEST['action'] : $_REQUEST['action2'];
+		self::bulk_action_prepare($bulk_action);
 		$sendback = admin_url('upload.php');
 		if (isset($_REQUEST['paged'])) {
 			$pagenum = absint($_REQUEST['paged']);
@@ -133,12 +146,26 @@ class Dog_Media_Features {
 		exit;
 	}
 
+	private static function bulk_action_prepare($action) {
+		$delimiter = '__';
+		$pos = strpos($action, $delimiter);
+		if ($pos === false) {
+			return false;
+		}
+		$custom_action = substr($action, 0, $pos);
+		if (!$custom_action) {
+			return false;
+		}
+		$action_data = substr($action, $pos + strlen($delimiter));
+		return call_user_func(array(__CLASS__, 'bulk_action_' . $custom_action), $action_data);
+	}
+
 	public static function bulk_action_toggle_category($cat_id) {
 		$config = self::config();
 		$cat_id = intval($cat_id);
 		$ids = array_map('intval', $_REQUEST['media']);
 		if (empty($ids)) {
-			return;
+			return false;
 		}
 		foreach ($ids as $id) {
 			if (!$cat_id) {
@@ -149,6 +176,7 @@ class Dog_Media_Features {
 				wp_add_object_terms($id, array($cat_id), $config['name']);
 			}
 		}
+		return true;
 	}
 
 	public static function filter_mime_types($mime_types) {
@@ -163,8 +191,15 @@ class Dog_Media_Features {
   		)));
 	}
 
-	public static function ajax_handler() {
-
+	public static function update_categories() {
+		if ($_POST['custom_action'] == -1) {
+			return dog__ajax_response_error(array('message' => dog__txt('Nu ai selectat nicio acțiune')));
+		} else if (!$_REQUEST['media']) {
+			return dog__ajax_response_error(array('message' => dog__txt('Nu ai selectat niciun obiect')));
+		} else if (!self::bulk_action_prepare($_POST['custom_action'])) {
+			return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Categoriile nu pot fi modificate')));
+		}
+		return dog__ajax_response_ok();
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/
@@ -178,12 +213,23 @@ class Dog_Media_Features {
 
 	/***** REQUIRE DEPENDENCIES *****/
 
-	public static function check() {
-		return function_exists('dog__txt');
+	public static function requires($dependencies) {
+		self::$_dependencies = $dependencies;
 	}
 
-	public static function requires() {
-        add_action('admin_notices', array(__CLASS__, 'requires_notice'));
+	public static function check() {
+		if (self::$_dependencies) {
+			foreach (self::$_dependencies as $d) {
+				if (!class_exists($d)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public static function depends() {
+        add_action('admin_notices', array(__CLASS__, 'depends_notice'));
         $plugin_dir = basename(dirname(__FILE__));
         $plugin_name = "{$plugin_dir}/plugin.php";
         deactivate_plugins($plugin_name);
@@ -192,11 +238,11 @@ class Dog_Media_Features {
         }
 	}
 
-	public static function requires_notice() {
+	public static function depends_notice() {
 		$plugin_path = dirname(__FILE__);
 		$plugin_file = "{$plugin_path}/plugin.php";
 		$plugin_data = get_plugin_data($plugin_file, false, false);
-		?><div class="error"><p>Plugin "<?= $plugin_data['Name'] ?>" requires the "DOG Shared" plugin to be installed and active</p></div><?php
+		?><div class="error"><p>Plugin <b><?= $plugin_data['Name'] ?></b> requires the following plugins to be installed and active: <b><?= str_replace('_', ' ', implode('</b>, <b>', self::$_dependencies)) ?></b></p></div><?php
 	}
 
 }

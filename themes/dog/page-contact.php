@@ -1,22 +1,40 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 if (dog__is_post('contact_submit')) {
-	dog__whitelist_fields(array('nume', 'email', 'mesaj'));
-	dog__get_post_data(DOG__NAMESPACE_CONTACT);
-	dog__validate_nonce(dog__contact_url(), dog__contact_url());
-	dog__validate_honeypot();
-	dog__validate_required_fields(array('nume', 'email', 'mesaj'));
-	dog__validate_regex_field('nume', '/^[\\s\\p{L}-]+$/iu', dog__txt('Numele introdus este invalid'));
-	dog__validate_regex_field('email', DOG__REGEX_KEY_EMAIL, dog__txt('Adresa email invalida'));
-	if (dog__form_is_valid()) {
-		if (dog__send_form_email(DOG__NAMESPACE_CONTACT, $errors)) {
+	Dog_Form::whitelist_keys(array('contact_name', 'contact_email', 'contact_phone', 'contact_message'));
+	Dog_Form::sanitize_post_data(array(
+		'contact_name'    => DOG__POST_FIELD_TYPE_TEXT,
+		'contact_email'   => DOG__POST_FIELD_TYPE_EMAIL,
+		'contact_phone'   => DOG__POST_FIELD_TYPE_TEXT,
+		'contact_message' => DOG__POST_FIELD_TYPE_TEXTAREA,
+	));
+	Dog_Form::validate_nonce(dog__contact_url(), dog__contact_url());
+	Dog_Form::validate_honeypot();
+	Dog_Form::validate_required_fields(array('contact_name', 'contact_email', 'contact_message'));
+	Dog_Form::validate_email_fields('contact_email');
+	Dog_Form::validate_regex_fields(array(
+		'contact_name',
+		'contact_phone',
+	), array(
+		'/^[\\s\\p{L}-\']+$/iu',
+		'/^[0-9-\+\.\(\)\\s]+$/',
+	), array(
+		dog__txt('Numele introdus este invalid'),
+		dog__txt('Numărul de telefon este invalid'),
+	));
+	if (Dog_Form::form_is_valid()) {
+		$result = dog__send_form_mail_standard();
+		if ($result === true) {
 			dog__set_flash_success('form', dog__txt('Mesajul a fost trimis'));
 			dog__safe_redirect(dog__contact_success_url());
 		} else {
-			dog__set_form_error(dog__txt('Formularul nu poate fi trimis'));
+			Dog_Form::set_form_error(dog__txt('Formularul nu poate fi trimis sau a fost trimis incomplet'));
+			foreach ($result as $n => $e) {
+				Dog_Form::set_form_error($e, 'mail_' . $n);
+			}
 		}
-	} else if (!dog__get_form_errors()) {
-		dog__set_form_error(dog__txt('Corectati erorile'));
+	} else if (!Dog_Form::get_form_errors()) {
+		Dog_Form::set_form_error(dog__txt('Corectati erorile'));
 	}
 }
 get_header();

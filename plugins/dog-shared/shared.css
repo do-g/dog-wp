@@ -1,0 +1,58 @@
+.dog-admin--page div.error,
+.dog-admin--page div.updated {
+	margin: 15px 0 0 0;
+}
+
+.dog-admin--page div.error u {
+	font-weight: normal;
+	text-decoration: none;
+}
+
+.dog-admin--page h1 {
+	padding-bottom: 0;
+}
+
+.dog-admin--form .page-description {
+	padding: 15px 0 0 0;
+	margin: 0;
+}
+
+.dog-admin--form .form-field {
+	padding: 15px 0 0 0;
+}
+
+.dog-admin--form .form-field-input-hidden {
+	padding: 0;
+}
+
+.dog-admin--form .form-label {
+	display: block;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.dog-admin--form .field-error {
+	display: inline-block;
+	color: #ff0000;
+	margin: 0 0 0 30px;
+}
+
+.dog-admin--form .form-error {
+	color: #ff0000;
+	margin-top: 20px;
+}
+
+.dog-admin--form p.submit {
+	margin: 0;
+	padding: 15px 0 0 0;
+}
+
+.dog-admin--form p.submit input {
+	margin-right: 10px;
+}
+
+.dog-admin--form pre {
+	padding: 20px;
+	background: #fff;
+	font-size: 12px;
+}

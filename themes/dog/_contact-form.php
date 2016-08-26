@@ -1,83 +1,90 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
-<form action="<?= dog__contact_url() ?>" method="post" class="contact-form">
+<form action="<?= dog__contact_url() ?>" method="post" class="contact-form" id="contact-form">
 	<?php
-		dog__show_form_field(array(
+		Dog_Form::render_form_errors();
+		Dog_Form::render_form_field(array(
 			'wrapper' => array(),
 			'label' => array(
-				'text' => dog__txt('Numele dumneavoastră')
+				'text' => dog__txt('Numele dumneavoastră'),
 			),
 			'errors' => array(),
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'text',
-				'name' => 'nume',
-				'value' => dog__get_post_value('nume'),
-				'placeholder' => dog__txt_attr('Nume'),
+				'name' => 'contact_name',
+				'value' => Dog_Form::get_post_value('contact_name'),
+				'placeholder' => dog__txt('Sugestie pentru câmpul nume'),
 				'maxlength' => 30,
-				'required' => 'required'
-			)
+				'required' => 'required',
+			),
+			'hint' => array(
+				'text' => dog__txt('Informații suplimentare pentru câmpul nume'),
+			),
 		));
-		dog__show_form_field(array(
+		Dog_Form::render_form_field(array(
 			'wrapper' => array(),
+			'label' => array(
+				'text' => dog__txt('Adresa email'),
+			),
 			'errors' => array(),
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'email',
-				'name' => 'email',
-				'value' => dog__get_post_value('email'),
-				'placeholder' => dog__txt_attr('Adresa email'),
+				'name' => 'contact_email',
+				'value' => Dog_Form::get_post_value('contact_email'),
+				'placeholder' => dog__txt('Sugestie pentru câmpul email'),
 				'maxlength' => 50,
-				'required' => 'required'
+				'required' => 'required',
 			),
 			'hint' => array(
-				'text' => dog__txt('Veți primi răspuns pe această adresă'),
-			)
+				'text' => dog__txt('Informații suplimentare pentru câmpul email'),
+			),
 		));
-		dog__show_form_field(array(
+		Dog_Form::render_form_field(array(
+			'wrapper' => array(),
+			'label' => array(
+				'text' => dog__txt('Numărul de telefon'),
+			),
+			'errors' => array(),
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'tel',
-				'name' => 'telefon',
-				'value' => dog__get_post_value('telefon'),
-				'placeholder' => dog__txt_attr('+40 722 312 789')
-			)
-		));
-		dog__show_form_field(array(
-			'field' => array(
-				'tag' => 'input',
-				'type' => 'number',
-				'name' => 'varsta',
-				'value' => dog__get_post_value('varsta')
+				'name' => 'contact_phone',
+				'value' => Dog_Form::get_post_value('contact_phone'),
+				'placeholder' => dog__txt('Sugestie pentru câmpul telefon'),
+				'maxlength' => 20,
 			),
-			'label' => array(
-				'text' => dog__txt('Vârsta dumneavoastră')
-			)
+			'hint' => array(
+				'text' => dog__txt('Informații suplimentare pentru câmpul telefon'),
+			),
 		));
-		dog__show_form_field(array(
+		Dog_Form::render_form_field(array(
 			'wrapper' => array(),
 			'label' => array(
-				'text' => dog__txt('Mesajul dumneavoastră')
+				'text' => dog__txt('Mesajul dumneavoastră'),
 			),
+			'errors' => array(),
 			'field' => array(
 				'tag' => 'textarea',
-				'name' => 'mesaj',
-				'value' => dog__get_post_value('mesaj'),
-				'placeholder' => dog__txt_attr('Mesaj'),
-				'required' => 'required'
+				'name' => 'contact_message',
+				'value' => Dog_Form::get_post_value('contact_message'),
+				'placeholder' => dog__txt('Sugestie pentru câmpul mesaj'),
+				'required' => 'required',
 			),
-			'errors' => array()
+			'hint' => array(
+				'text' => dog__txt('Informații suplimentare pentru câmpul mesaj'),
+			),
 		));
-		dog__show_form_field(array(
+		Dog_Form::render_form_field(array(
 			'field' => array(
 				'tag' => 'button',
 				'type' => 'submit',
 				'name' => 'contact_submit',
 				'class' => 'button',
-				'value' => dog__txt('Trimite')
+				'value' => dog__txt('Trimite formularul')
 			)
 		));
-		dog__nonce_field(dog__contact_url());
-		dog__honeypot_field();
-		dog__render_form_errors();
+		Dog_Form::render_nonce_field(dog__contact_url());
+		Dog_Form::render_honeypot_field();
 	?>
 </form>
