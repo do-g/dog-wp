@@ -3,7 +3,7 @@
 * Plugin Name: DOG Labels
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-sample
 * Description: Reads all theme and plugin labels and makes them available for translation
-* Version: 1.0.13
+* Version: 1.0.14
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

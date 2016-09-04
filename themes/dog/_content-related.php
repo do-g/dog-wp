@@ -17,7 +17,7 @@ if ($post_tags) {
 		<div class="list related">
 		<?php while ($query->have_posts()) {
 			$query->the_post();
-			dog__include_template('_content-post');
+			dog__include_template('_content-post-list');
 		} ?>
 		</div>
 	<?php }

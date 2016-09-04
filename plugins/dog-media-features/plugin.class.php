@@ -30,7 +30,7 @@ class Dog_Media_Features {
 			add_filter('dog__sh_js_nonces', array(__CLASS__, 'nonces'));
 			self::register_media_taxonomy();
 		} else {
-			add_action('admin_init', array(__CLASS__, 'requires'));
+			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
 	}
 

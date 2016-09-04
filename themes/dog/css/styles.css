@@ -16,7 +16,13 @@ body {
 	display: none;
 }
 
-/***** general *****/
+.w-container {
+	width: 1200px;
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+/***** general & utils *****/
 
 .clearfix:before,
 .clearfix:after {
@@ -38,8 +44,6 @@ ol.clean {
 	padding: 0;
 	list-style-type: none;
 }
-
-/***** positioning *****/
 
 .relative {
 	position: relative;
@@ -76,6 +80,39 @@ ol.clean {
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
+}
+
+.full-height {
+	height: 100%;
+}
+
+.full-width {
+	width: 100%;
+}
+
+img.full-height {
+	height: 100% !important;
+	width: auto !important;
+}
+
+img.full-width {
+	width: 100% !important;
+	height: auto !important;
+}
+
+/***** content *****/
+
+.content-columns {
+	display: flex;
+	justify-content: space-between;
+}
+
+.content-column.main {
+	flex: 1 1 auto;
+}
+
+.content-column.side {
+	flex: 0 0 230px;
 }
 
 /***** preloader *****/
@@ -172,7 +209,9 @@ body.preloading .preloader {
 
 @media (max-width: 991px) {
 
-
+	.w-container {
+		width: auto;
+	}
 
 }
 

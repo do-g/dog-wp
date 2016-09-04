@@ -48,18 +48,23 @@ $new_version = implode('.', $parts);
 $new_contents = str_replace("Version: {$version}", "Version: {$new_version}", $contents);
 file_put_contents($version_file, $new_contents);
 echo "File updated with version {$new_version}\n";
+$old_archive_name = "{$name}.{$version}.zip";
 $archive_name = "{$name}.{$new_version}.zip";
 echo "Preparing archive: {$archive_name}\n";
 chdir($full_path . '/..');
 exec("zip -r {$archive_name} {$name}");
+$old_dest = "{$path}/{$old_archive_name}";
 $dest = "{$path}/{$archive_name}";
-echo "Uploading archive: {$dest}\n";
+echo "Establishing FTP connection\n";
 $conn_id = ftp_connect('ftp.dorinoanagurau.ro');
 $login_result = ftp_login($conn_id, 'wp@public.dorinoanagurau.ro', 'cb3!c)#~VT]-');
+echo "Deleting archive: {$old_dest}\n";
+ftp_delete($conn_id, $old_dest);
+echo "Uploading archive: {$dest}\n";
 if (!ftp_put($conn_id, $dest, $archive_name, FTP_BINARY)) {
 	die('Unable to upload archive');
 }
 ftp_close($conn_id);
-echo "Deleting archive: {$archive_name}\n";
+echo "Deleting local archive: {$archive_name}\n";
 @unlink($archive_name);
 echo "Version: {$new_version} is ready\n";

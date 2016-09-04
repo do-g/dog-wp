@@ -17,6 +17,10 @@ function dogx__enqueue_assets_low_priority($params) {
 	}
 }
 
+function dogx__dependencies() {
+	return array('Dog_Form');
+}
+
 function dogx__minify_styles() {
 	return array(
 		dog__css_url('vendor'),

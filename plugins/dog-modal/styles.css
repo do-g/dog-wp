@@ -1,0 +1,156 @@
+/***** modal window *****/
+
+body.dog-md {
+	overflow: hidden;
+	height: 100%;
+}
+
+.dog-md-window {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: -1;
+	opacity: 0;
+	background-color: rgba(0, 0, 0, 0.9);
+	transition: all .3s;
+}
+
+body.dog-md .dog-md-window {
+	z-index: 10;
+	opacity: 1;
+}
+
+.dog-md-body {
+	width: 100%;
+	height: 100%;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.dog-md-close {
+	display: inline-block;
+	position: absolute;
+	top: 5px;
+	right: 10px;
+	height: 24px;
+	line-height: 23px;
+	width: 24px;
+	text-align: center;
+	color: #fff;
+	font-size: 20px;
+	font-weight: 500;
+	cursor: pointer;
+	z-index: 11;
+	border-radius: 100%;
+	border: 1px solid #fff;
+}
+
+/***** modal gallery *****/
+
+.dog-md-gallery {
+	height: 100%;
+}
+
+.dog-md-gallery aside {
+	display: inline-block;
+	position: absolute;
+	top: 5px;
+	left: 10px;
+	height: 24px;
+	line-height: 24px;
+	color: #fff;
+	font-weight: 500;
+	z-index: 11;
+}
+
+.dog-md-gallery ul {
+	padding: 36px 0 0 0;
+	margin: 0;
+	list-style-type: none;
+	height: 100%;
+	display: flex;
+	flex-wrap: nowrap;
+	transition: all .3s;
+	position: relative;
+	left: 0;
+}
+
+.dog-md-gallery li {
+	flex: 1 0 0;
+	height: 100%;
+	background-size: contain;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	position: relative;
+	text-align: center;
+}
+
+.dog-md-gallery li .v-center-helper {
+	display: inline-block;
+  height: 100%;
+	vertical-align: middle;
+}
+
+.dog-md-gallery li .v-center-helper ~ img {
+	vertical-align: middle;
+}
+
+.dog-md-gallery img.contain-width {
+	width: 100%;
+  height: auto;
+}
+
+.dog-md-gallery img.contain-height {
+	height: 100%;
+  width: auto;
+}
+
+.dog-md-gallery figcaption {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	right: 0;
+	text-align: center;
+	background-color: rgba(0, 0, 0, 0.8);
+	height: 35px;
+	line-height: 35px;
+	margin-bottom: 1px;
+	color: #fff;
+	font-weight: 500;
+	border-bottom: 1px solid #888;
+}
+
+.dog-md-gallery nav img {
+	box-sizing: content-box;
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	margin-top: -18px;
+	padding: 15px 20px;
+	background-color: rgba(0, 0, 0, 0.3);
+	height: 40px;
+	cursor: pointer;
+}
+
+.dog-md-gallery nav img:hover {
+	background-color: rgba(0, 0, 0, 0.8);
+}
+
+.dog-md-gallery nav img.right {
+	left: inherit;
+	right: 10px;
+}
+
+.dog-md-image-gallery li .download {
+	display: block;
+	position: absolute;
+	bottom: 10px;
+	left: 0;
+	right: 0;
+	text-align: center;
+	color: #fff;
+	font-size: 16px;
+	font-weight: 500;
+}

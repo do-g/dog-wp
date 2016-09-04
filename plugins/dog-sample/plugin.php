@@ -15,5 +15,5 @@ define('DOG__SP_PLUGIN_DIR', plugin_dir_path(__FILE__ ));
 
 require_once(DOG__SP_PLUGIN_DIR . 'plugin.class.php');
 
-Dog_Sample::requires(array('Dog_Shared', 'Dog_Form'));
+Dog_Sample::requires(array('Dog_Shared'));
 Dog_Sample::init();

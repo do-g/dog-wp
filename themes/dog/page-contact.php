@@ -37,6 +37,4 @@ if (dog__is_post('contact_submit')) {
 		Dog_Form::set_form_error(dog__txt('Corectati erorile'));
 	}
 }
-get_header();
-dog__include_template('_content-contact');
-get_footer();
+dog__include_template('_content-columns', array('template' => '_content-contact'));

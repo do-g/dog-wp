@@ -17,6 +17,8 @@ if (DOG__ENV == 'dev') {
 	ini_set('display_startup_errors', 0);
 }
 
+$dog__dependencies = dog__extend_with('dependencies', array('Dog_Shared'));
+
 $dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
 	'AboutPage' => array('despre', 'about'),
 	'ContactPage' => array('contact', 'contact-us'),
@@ -34,7 +36,7 @@ function dog__include_template($filename, $tpl_data = null) {
 	include(locate_template($filename . '.php'));
 }
 
-function dog__show_content($template) {
+function dog__loop_content($template) {
 	dog__include_template('_content-loop', array('template' => $template));
 }
 
@@ -55,10 +57,10 @@ function dog__body_class($user_classes = array()) {
 	$obj = get_queried_object();
 	if ($obj->ID) {
 		$tags = get_the_tags($obj->ID);
-	}
-	if ($tags) {
-		foreach ($tags as $t) {
-			array_push($classes, "tag--{$t->slug}");
+		if ($tags) {
+			foreach ($tags as $t) {
+				array_push($classes, "tag--{$t->slug}");
+			}
 		}
 	}
 	if (dog__lang_plugin_is_active()) {
@@ -236,12 +238,13 @@ function dog__enqueue_assets_high_priority() {
 }
 
 function dog__enqueue_assets_low_priority() {
-	$cached_styles = Dog_Asset_Features::has_cached_styles();
+	$dog_af_plugin_active = class_exists('Dog_Asset_Features');
+	$cached_styles = $dog_af_plugin_active && Dog_Asset_Features::has_cached_styles();
 	if ($cached_styles !== false) {
 		wp_enqueue_style('cache_styles', $cached_styles, null, null);
 	}
 
-	$cached_scripts = Dog_Asset_Features::has_cached_scripts();
+	$cached_scripts = $dog_af_plugin_active && Dog_Asset_Features::has_cached_scripts();
 	if ($cached_scripts !== false) {
 		wp_enqueue_script('cache_script', $cached_scripts, null, null, true);
 		wp_localize_script('cache_script', 'dog__sh', Dog_Shared::get_js_vars());
@@ -316,7 +319,7 @@ function dog__custom_image_sizes($sizes) {
 	}
 	foreach ($_wp_additional_image_sizes as $id => $data) {
 		if (!isset($sizes[$id])) {
-			$sizes[$id] = ucfirst(str_replace(array('_', '-'), ' ', $id));
+			$sizes[$id] = dog__txt(ucfirst(str_replace(array('_', '-'), ' ', $id)));
 		}
 	}
 	return $sizes;
@@ -346,12 +349,15 @@ function dog__override_with($function_name, $default = null, $params = null) {
 }
 
 function dog__requires() {
-	if (!function_exists('dog__txt')) {
-		function dog__txt($label) {
-			return $label;
+	global $dog__dependencies;
+	if ($dog__dependencies) {
+		foreach ($dog__dependencies as $d) {
+			if (!class_exists($d)) {
+				add_action('admin_notices', 'dog__requires_notice');
+				dog__theme_switch();
+				return;
+			}
 		}
-		add_action('admin_notices', 'dog__requires_notice');
-		dog__theme_switch();
 	}
 }
 
@@ -369,7 +375,8 @@ function dog__theme_switch() {
 }
 
 function dog__requires_notice() {
-	?><div class="error"><p>DOG themes require the "DOG Shared" plugin to be installed and active. Unable to activate theme</p></div><?php
+	global $dog__dependencies;
+	?><div class="error"><p>This theme requires the following plugins to be installed and active: <b><?= str_replace('_', ' ', implode('</b>, <b>', $dog__dependencies)) ?></b></p></div><?php
 }
 
 if (!is_admin()) {

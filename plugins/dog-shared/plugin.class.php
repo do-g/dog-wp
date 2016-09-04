@@ -25,7 +25,7 @@ class Dog_Shared {
 	}
 
 	public static function register_site_assets() {
-		wp_register_script('dog_sh_scripts_shared', dog__plugin_url('shared.js', self::PLUGIN_SLUG), null, null, true);
+		wp_enqueue_script('dog_sh_scripts_shared', dog__plugin_url('shared.js', self::PLUGIN_SLUG), array('vendor_scripts'), null, true);
 		wp_localize_script('dog_sh_scripts_shared', 'dog__sh', self::get_js_vars());
 	}
 
@@ -48,8 +48,10 @@ class Dog_Shared {
 			'hp_time_name' => DOG__HP_TIMER_NAME,
 			'ajax_response_status_success' => DOG__AJAX_RESPONSE_STATUS_SUCCESS,
 			'ajax_response_status_error' => DOG__AJAX_RESPONSE_STATUS_ERROR,
-			'alert_response_error_nonce' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi validat'),
-			'alert_request_error' => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
+			'labels' => array(
+				'alert_response_error_nonce' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi validat'),
+				'alert_request_error' => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
+			),
 		));
 		$nonces = apply_filters('dog__sh_js_nonces', array());
 		return array_merge($vars, $nonces);
@@ -62,6 +64,7 @@ class Dog_Shared {
 		$nonce = $_POST[$nonce_key];
 		$method = $_POST['method'];
 		$callable = explode('::', $method);
+		$callable = count($callable) > 1 ? $callable : reset($callable);
 		if (!check_ajax_referer(dog__string_to_key($method), $nonce_key, false)) {
 			$response = dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi validată')));
 		} else if (!is_callable($callable)) {

@@ -4,6 +4,14 @@ function dog__shared_lib() {
 
   /***** usefull functions *****/
 
+  this.is_jquery = function (obj) {
+    return obj instanceof jQuery;
+  }
+
+  this.to_jquery = function (obj) {
+    return this.is_jquery(obj) ? obj : jQuery(obj);
+  }
+
   this.string_to_key = function (value, prefix, suffix) {
     value += '';
     value = value.toLowerCase();
@@ -118,7 +126,7 @@ function dog__shared_lib() {
   this.process_ajax_response = function(response, options, callbacks) {
     var is_error = false;
     if (!this.validate_response_nonce(response, options.data[this.get_nonce_name()])) {
-      response.message = response.message ? response.message : dog__sh.alert_response_error_nonce;
+      response.message = response.message ? response.message : dog__sh.labels.alert_response_error_nonce;
       is_error = true;
     } else {
       is_error = this.is_response_error(response);

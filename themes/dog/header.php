@@ -13,10 +13,13 @@
 	<?php dog__include_template('_preloader') ?>
 	<section class="page-wrapper">
 		<header class="page-header">
-			<a href="<?= esc_url(home_url('/')) ?>" id="logo">
-				<img src="<?= dog__img_url('logo.png') ?>" />
-				<span><?= dog__txt('Bine ați venit') ?></span>
-			</a>
-			<?php wp_nav_menu(array('theme_location' => 'location-main-menu', 'menu_class' => 'main-menu', 'container' => false)) ?>
+			<div class="w-container">
+				<a href="<?= esc_url(home_url('/')) ?>" id="logo" title="<?= dog__txt('Acasă') ?>">
+					<img src="<?= dog__img_url('logo.png') ?>" />
+					<span><?= dog__txt('Bine ați venit') ?></span>
+				</a>
+				<div class="search-bar"><?php get_search_form() ?></div>
+				<?php wp_nav_menu(array('theme_location' => 'location-main-menu', 'menu_class' => 'main-menu', 'container' => false)) ?>
+			</div>
 		</header>
 		<main itemprop="mainContentOfPage" class="page-main">

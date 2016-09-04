@@ -58,7 +58,7 @@ function dog__mf_switch_category() {
 			jQuery('.select-mode-toggle-button').click();
 		},
 		fail: function (textStatus, errorThrown) {
-			$s.show_admin_error(dog__sh.alert_request_error);
+			$s.show_admin_error(dog__sh.labels.alert_request_error);
 		}
-});
+	});
 }

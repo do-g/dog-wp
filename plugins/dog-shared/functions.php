@@ -551,7 +551,12 @@ function dog__get_file_output($filepath, $tpl_data = null) {
     return false;
 }
 
-function dog__get_post_image_url($size = 'full') {
-	$id = get_post_thumbnail_id();
+function dog__get_post_image_url($size = 'full', $post_id = null) {
+	$id = get_post_thumbnail_id($post_id);
 	return esc_url($id ? reset(wp_get_attachment_image_src($id, $size)) : null);
+}
+
+function dog__get_attachment_image_url($size = 'full', $post_id = null) {
+	$id = $post_id ? $post_id : get_the_id();
+	return reset(wp_get_attachment_image_src($id, $size));
 }

@@ -28,7 +28,7 @@ class Dog_Asset_Features {
 			add_action('admin_menu', array(__CLASS__, 'add_menu'));
 			add_filter('plugin_action_links_' . dog__get_plugin_name_from_path(__FILE__, true), array(__CLASS__, 'options_link'));
 		} else {
-			add_action('admin_init', array(__CLASS__, 'requires'));
+			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
 	}
 

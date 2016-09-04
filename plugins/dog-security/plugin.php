@@ -3,7 +3,7 @@
 * Plugin Name: DOG Security
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-security
 * Description: Checks whether all PHP files block
-* Version: 1.0.6
+* Version: 1.0.7
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

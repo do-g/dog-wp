@@ -3,7 +3,7 @@
 * Plugin Name: DOG Asset Features
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-asset-features
 * Description: Minifies and compresses assets
-* Version: 1.0.88
+* Version: 1.0.89
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

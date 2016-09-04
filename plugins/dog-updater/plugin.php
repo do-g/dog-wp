@@ -3,7 +3,7 @@
 * Plugin Name: DOG Updater
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-updater
 * Description: Updates DOG plugins and themes
-* Version: 1.0.53
+* Version: 1.0.54
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog
