@@ -3,7 +3,7 @@
 * Plugin Name: DOG Sample
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-sample
 * Description: Sample plugin intended to be used as a fresh start for new plugins
-* Version: 1.0.1
+* Version: 1.0.0
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

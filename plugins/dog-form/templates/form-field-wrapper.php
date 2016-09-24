@@ -13,7 +13,7 @@ if (isset($tpl_data['wrapper'])) {
 		unset($default_css_classes[2]);
 	}
 	if (!Dog_Form::field_is_valid($field['name'])) {
-		array_push($default_css_classes, 'has-error');
+		array_push($default_css_classes, 'has-errors');
 	}
 	$wrapper['class'] = dog__merge_css_classes($default_css_classes, $wrapper['class']);
 	$attributes = dog__attributes_array_to_html($wrapper); ?>

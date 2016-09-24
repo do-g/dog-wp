@@ -3,7 +3,7 @@
   $(document).ready(function() {
     if (dog__my.auto_init) {
       $('body').dog_md_youtube_gallery({
-        selector: '[rel^="dog-md-youtube-gallery"]'
+        selector: '[rel^="' + dog__my.rel_fragment + '"]'
       });
     }
   });

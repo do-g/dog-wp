@@ -3,7 +3,7 @@
 * Plugin Name: DOG Form
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-sample
 * Description: Simplified form development with improved security
-* Version: 1.0.15
+* Version: 1.0.32
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

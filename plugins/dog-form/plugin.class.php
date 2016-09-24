@@ -16,6 +16,20 @@ class Dog_Form {
 	const ERROR_TYPE_REQUIRED = 'required';
 	const ERROR_TYPE_EMAIL = 'email';
 	const ERROR_TYPE_REGEX = 'regex';
+	const SHORTCODE_TAG = 'dog-form';
+	const REGEX_VALID_NAME = "/^[\\p{L}\\s-']+$/iu";
+	const REGEX_VALID_ZIP = "/^[\\p{L}\\p{N}-]+$/i";
+	const REGEX_VALID_PHONE = "/^[0-9-\+\.\(\)\\s]+$/";
+	const REGEX_VALID_ADDRESS = "/^[\\p{L}\\p{N}\\s-'\.,]+$/iu";
+	const FIELD_MAXLENGTH_NAME = 30;
+	const FIELD_MAXLENGTH_FULL_NAME = 50;
+	const FIELD_MAXLENGTH_COMPANY_NAME = 50;
+	const FIELD_MAXLENGTH_ADDRESS = 100;
+	const FIELD_MAXLENGTH_TOWN = 50;
+	const FIELD_MAXLENGTH_ZIP = 10;
+	const FIELD_MAXLENGTH_EMAIL = 50;
+	const FIELD_MAXLENGTH_PHONE = 20;
+	const FIELD_MAXLENGTH_SUBJECT = 100;
 
 	private static $_initialized = false;
 	private static $_dependencies = array();
@@ -33,10 +47,21 @@ class Dog_Form {
 
 	public static function setup() {
 		if (self::check()) {
-
+			add_shortcode(self::SHORTCODE_TAG, array(__CLASS__, 'short_code'));
 		} else {
 			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
+	}
+
+	public static function short_code($attrs) {
+		if (!$attrs['name']) {
+			$obj = get_queried_object();
+			$attrs['name'] = $obj->post_name;
+		}
+		$form_file_path = locate_template('_form-' . $attrs['name'] . '.php');
+		return dog__get_file_output($form_file_path, array(
+			'attrs' => $attrs,
+		));
 	}
 
 	public static function whitelist_keys($allowed) {
@@ -129,11 +154,15 @@ class Dog_Form {
 		}
 	}
 
+	public static function field_is_empty($field_name) {
+		return self::get_post_value($field_name) === '';
+	}
+
 	public static function validate_required_fields($field_list, $error_messages = null) {
 		$field_list = is_array($field_list) ? $field_list : array($field_list);
 		$error_messages = is_array($error_messages) ? $error_messages : array($error_messages);
 		foreach ($field_list as $n => $field_name) {
-			if (self::get_post_value($field_name) == '') {
+			if (self::field_is_empty($field_name)) {
 				$error_message = $error_messages[$n] ? $error_messages[$n] : dog__txt('Acest câmp este obligatoriu');
 				self::set_field_error($field_name, $error_message, self::ERROR_TYPE_REQUIRED);
 			}
@@ -145,7 +174,7 @@ class Dog_Form {
 		$error_messages = is_array($error_messages) ? $error_messages : array($error_messages);
 		foreach ($field_list as $n => $field_name) {
 			$field_value = self::get_post_value($field_name);
-			if ($field_value && self::field_is_valid($field_name) && !is_email($field_value)) {
+			if (!self::field_is_empty($field_name) && self::field_is_valid($field_name) && !is_email($field_value)) {
 				$error_message = $error_messages[$n] ? $error_messages[$n] : dog__txt('Adresa email este invalidă');
 				self::set_field_error($field_name, $error_message, self::ERROR_TYPE_EMAIL);
 			}
@@ -158,7 +187,7 @@ class Dog_Form {
 		$error_messages = is_array($error_messages) ? $error_messages : array($error_messages);
 		foreach ($field_list as $n => $field_name) {
 			$field_value = self::get_post_value($field_name);
-			if ($field_value && self::field_is_valid($field_name)) {
+			if (!self::field_is_empty($field_name) && self::field_is_valid($field_name)) {
 				$error_message = $error_messages[$n] ? $error_messages[$n] : dog__txt('Valoarea introdusă nu respectă formatul acceptat');
 				$regex_pattern = $regex_patterns[$n];
 				if (!preg_match($regex_pattern, $field_value)) {
@@ -212,6 +241,17 @@ class Dog_Form {
 		if (DOG__HONEYPOT_ENABLED) {
 			include dog__plugin_path('templates/honeypot.php', self::PLUGIN_SLUG);
 		}
+	}
+
+	public static function render_action_field($action) {
+		self::render_form_field(array(
+			'field' => array(
+				'tag' => 'input',
+				'type' => 'hidden',
+				'name' => 'action',
+				'value' => $action,
+			),
+		));
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

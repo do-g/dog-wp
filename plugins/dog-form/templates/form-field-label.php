@@ -16,5 +16,7 @@ if (isset($tpl_data['label'])) {
 	}
 	$label['class'] = dog__merge_css_classes($default_css_classes, $label['class']);
 	$attributes = dog__attributes_array_to_html($label); ?>
-	<label for="<?= esc_attr($field['id']) ?>" <?= $attributes ?>><?= esc_html($text) ?></label>
+	<label for="<?= esc_attr($field['id']) ?>" <?= $attributes ?>><?= esc_html($text) ?><?php if ($field['required']) { ?>
+		<span class="required">*</span>
+	<?php } ?></label>
 <?php }

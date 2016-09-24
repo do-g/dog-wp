@@ -113,6 +113,11 @@ function dog__safe_redirect($location, $status = null) {
 	exit;
 }
 
+function dog__timestamp_url($url, $key_name = null) {
+	$timestamp = time();
+	return $url . (strpos($url, '?') !== false ? '&' : '?') . ($key_name ? "{$key_name}={$timestamp}" : $timestamp);
+}
+
 /***** paths *****/
 
 function dog__theme_path($file) {
@@ -274,6 +279,10 @@ function dog__txt_attr($label, $vars = null, $lang = null) {
 }
 
 /***** forms *****/
+
+function dog__form_action_url() {
+	return esc_url(admin_url('admin-post.php'));
+}
 
 function dog__get_boolean_attr_value($key, $condition) {
 	return $condition ? $key : false;
@@ -507,6 +516,22 @@ function dog__debug_queries() {
    	echo "</pre>";
 }
 
+function dog__is_debug() {
+	return defined('WP_DEBUG') && WP_DEBUG;
+}
+
+function dog__debug_message($public_message, $debug_message, $append = true) {
+	if (dog__is_debug()) {
+		if ($append) {
+			return "{$public_message} ({$debug_message})";
+		} else {
+			return $debug_message;
+		}
+	} else {
+		return $public_message;
+	}
+}
+
 function dog__string_to_html_tag($string, $tag) {
 	return "<{$tag}>{$string}</{$tag}>";
 }
@@ -542,6 +567,10 @@ function dog__clear_page_cache() {
 	}
 }
 
+function dog__include_file($file_path, $tpl_data = null) {
+	include($file_path);
+}
+
 function dog__get_file_output($filepath, $tpl_data = null) {
     if (is_file($filepath)) {
         ob_start();
@@ -551,12 +580,17 @@ function dog__get_file_output($filepath, $tpl_data = null) {
     return false;
 }
 
-function dog__get_post_image_url($size = 'full', $post_id = null) {
+function dog__get_featured_image_url($size = 'full', $post_id = null) {
 	$id = get_post_thumbnail_id($post_id);
 	return esc_url($id ? reset(wp_get_attachment_image_src($id, $size)) : null);
 }
 
-function dog__get_attachment_image_url($size = 'full', $post_id = null) {
-	$id = $post_id ? $post_id : get_the_id();
+function dog__get_attachment_url($id = null) {
+	$id = $id ? $id : get_the_id();
+	return wp_get_attachment_url($id);
+}
+
+function dog__get_attachment_image_url($size = 'full', $attachment_id = null) {
+	$id = $attachment_id ? $attachment_id : get_the_id();
 	return reset(wp_get_attachment_image_src($id, $size));
 }

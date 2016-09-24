@@ -56,3 +56,11 @@
 	background: #fff;
 	font-size: 12px;
 }
+
+.dog-admin--form p.submit .form-element-button {
+	margin: 0 10px 0 0;
+}
+
+#toplevel_page_dog-shared .wp-submenu .wp-first-item {
+	display: none;
+}

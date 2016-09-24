@@ -97,7 +97,7 @@ function dog__contact_url() {
 }
 
 function dog__contact_success_url() {
-	return dog__override_with(__FUNCTION__, dog__contact_url() . '?' . uniqid() . '=' . time());
+	return dog__override_with(__FUNCTION__, dog__timestamp_url(dog__contact_url()));
 }
 
 /**
@@ -158,7 +158,8 @@ function dog__send_form_mail_standard($custom_data = null) {
 
 	$subject = dog__value_or_default($custom_data['receiver']['subject'], dog__txt('Ai primit un mesaj de contact', null, dog__default_language()));
 
-	$template = dog__theme_email_path(dog__value_or_default($custom_data['receiver']['template'], 'contact-email-receiver'));
+	$custom_template = $custom_data['receiver']['template'] ? "{$custom_data['receiver']['template']}-email-receiver" : null;
+	$template = dog__theme_email_path(dog__value_or_default($custom_template, 'contact-email-receiver'));
 
 	$result = dog__send_mail($recipient, $subject, $headers, $template, $template_vars, $custom_data['receiver']['template_language'], $custom_data['receiver']['attachments']);
 	if (is_array($result)) {
@@ -178,7 +179,8 @@ function dog__send_form_mail_standard($custom_data = null) {
 
 		$subject = dog__value_or_default($custom_data['sender']['subject'], dog__txt('Ai trimis un mesaj de contact'));
 
-		$template = dog__theme_email_path(dog__value_or_default($custom_data['sender']['template'], 'contact-email-sender'));
+		$custom_template = $custom_data['sender']['template'] ? "{$custom_data['sender']['template']}-email-sender" : null;
+		$template = dog__theme_email_path(dog__value_or_default($custom_template, 'contact-email-sender'));
 
 		$template_language = dog__value_or_default($custom_data['sender']['template_language'], dog__active_language());
 
@@ -232,25 +234,24 @@ function dog__override_template($template) {
 }
 
 function dog__enqueue_assets_high_priority() {
-	wp_deregister_script('jquery');
 	wp_deregister_script('wp-embed');
+	wp_deregister_script('jquery');
 	dog__call_x_function(__FUNCTION__);
 }
 
 function dog__enqueue_assets_low_priority() {
-	$dog_af_plugin_active = class_exists('Dog_Asset_Features');
-	$cached_styles = $dog_af_plugin_active && Dog_Asset_Features::has_cached_styles();
+	$dog_af_plugin_active = class_exists('Dog_Asset_Optimiser');
+	$cached_styles = $dog_af_plugin_active ? Dog_Asset_Optimiser::has_cached_styles() : false;
 	if ($cached_styles !== false) {
 		wp_enqueue_style('cache_styles', $cached_styles, null, null);
 	}
-
-	$cached_scripts = $dog_af_plugin_active && Dog_Asset_Features::has_cached_scripts();
+	$cached_scripts = $dog_af_plugin_active ? Dog_Asset_Optimiser::has_cached_scripts() : false;
 	if ($cached_scripts !== false) {
 		wp_enqueue_script('cache_script', $cached_scripts, null, null, true);
-		wp_localize_script('cache_script', 'dog__sh', Dog_Shared::get_js_vars());
+	} else {
+		wp_enqueue_script('jquery', includes_url('js/jquery/jquery.js'), null, null, true);
 	}
-
-	dog__call_x_function(__FUNCTION__, array('cached_styles' => $cached_styles, 'cached_scripts' => $cached_scripts));
+	dog__call_x_function(__FUNCTION__);
 }
 
 function dog__dequeue_styles() {
@@ -307,9 +308,6 @@ function dog__init() {
 	register_taxonomy_for_object_type('post_tag', 'page');
 	register_taxonomy_for_object_type('post_tag', 'attachment');
 	dog__call_x_function(__FUNCTION__);
-	if(!session_id()) {
-        session_start();
-    }
 }
 
 function dog__custom_image_sizes($sizes) {
@@ -323,6 +321,71 @@ function dog__custom_image_sizes($sizes) {
 		}
 	}
 	return $sizes;
+}
+
+function dog__handle_post() {
+	if (dog__is_post()) {
+		$action_hook = $_POST['action'];
+		$callable = "dog__handle_post_{$action_hook}";
+		if (is_callable($callable)) {
+			call_user_func($callable);
+		}
+	}
+}
+
+function dog__handle_post_contact() {
+	$callable = 'dogx__handle_post_contact';
+	if (is_callable($callable)) {
+		return call_user_func($callable);
+	}
+	if (dog__is_post('contact_submit')) {
+		Dog_Form::whitelist_keys(array(
+			'contact_name',
+			'contact_email',
+			'contact_phone',
+			'contact_message',
+		));
+		Dog_Form::sanitize_post_data(array(
+			'contact_name'  	=> Dog_Form::POST_VALUE_TYPE_TEXT,
+			'contact_email'    	=> Dog_Form::POST_VALUE_TYPE_EMAIL,
+			'contact_phone' 	=> Dog_Form::POST_VALUE_TYPE_TEXT,
+			'contact_message'	=> Dog_Form::POST_VALUE_TYPE_TEXTAREA,
+		));
+		Dog_Form::validate_nonce('contact');
+		Dog_Form::validate_honeypot();
+		Dog_Form::validate_required_fields(array(
+			'contact_name',
+			'contact_email',
+			'contact_message',
+		));
+		Dog_Form::validate_email_fields(array(
+			'contact_email',
+		));
+		Dog_Form::validate_regex_fields(array(
+			'contact_name',
+			'contact_phone',
+		), array(
+			Dog_Form::REGEX_VALID_NAME,
+			Dog_Form::REGEX_VALID_PHONE,
+		), array(
+			dog__txt('Numele introdus este invalid'),
+			dog__txt('Numărul de telefon este invalid'),
+		));
+		if (Dog_Form::form_is_valid()) {
+			$result = dog__send_form_mail_standard();
+			if ($result === true) {
+				dog__set_flash_success('form', dog__txt('Solicitarea a fost trimisă'));
+				dog__safe_redirect(dog__contact_success_url());
+			} else {
+				Dog_Form::set_form_error(dog__txt('Formularul nu poate fi trimis sau a fost trimis cu erori'));
+				foreach ($result as $n => $e) {
+					Dog_Form::set_form_error($e, 'mail_' . $n);
+				}
+			}
+		} else if (!Dog_Form::get_form_errors()) {
+			Dog_Form::set_form_error(dog__txt('Te rugăm corectează erorile'));
+		}
+	}
 }
 
 function dog__call_x_function($function_name, $params = null) {
@@ -389,6 +452,7 @@ if (!is_admin()) {
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99990);
 	add_action('pre_get_posts', 'dog__enable_query_tags');
 	add_action('wp_print_styles', 'dog__dequeue_styles', 99999);
+	add_action('wp', 'dog__handle_post');
 	remove_action('wp_head', 'rsd_link'); // remove really simple discovery link
 	remove_action('wp_head', 'wp_generator'); // remove wordpress version
 	remove_action('wp_head', 'wlwmanifest_link'); // remove wlwmanifest.xml (needed to support windows live writer)
@@ -399,9 +463,9 @@ if (!is_admin()) {
 	remove_action('wp_head', 'print_emoji_detection_script', 7);
 	remove_action('wp_print_styles', 'print_emoji_styles');
 }
+add_action('init', 'dog__init');
 add_action('widgets_init', 'dog__widgets_init');
 add_action('after_setup_theme', 'dog__theme_setup');
-add_action('init', 'dog__init');
 add_action('after_switch_theme', 'dog__requires');
 add_filter('dog__sh_js_vars', 'dog__js_vars');
 add_filter('dog__sh_js_nonces', 'dog__nonces');

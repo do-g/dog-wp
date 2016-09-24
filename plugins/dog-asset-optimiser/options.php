@@ -16,12 +16,12 @@
 		<?php }
 	} ?>
 	<form name="form" method="post" action="admin-post.php" class="dog-admin--form dog-form-assets">
- 		<p class="page-description"><?= dog__txt('Se recomandă ca resursele statice (în general cu extensia .js și .css) să fie grupate împreună și comprimate.
+ 		<p class="page-description"><?= dog__txt('Se recomandă ca resursele statice (de tipul .js și .css) să fie grupate împreună și comprimate.
 		Acest lucru ajută la optimizarea timpului de răspuns al paginilor care au de descărcat mai puține fișiere și de dimensiuni mai reduse.
  		Nu se recomandă folosirea acestei opțiuni dacă situl este în dezvoltare ci doar după lansare.
  		Verifică mai jos resursele care vor fi incluse apoi apasă butonul pentru a le procesa.') ?></p>
  		<?php
- 			$default_items = apply_filters('dog__af_include_css', array());
+ 			$default_items = dog__get_option(self::OPTION_CSS);
  			$value = $default_items ? implode("\n", $default_items) : '';
 			Dog_Form::render_form_field(array(
 				'wrapper' => array(),
@@ -36,7 +36,7 @@
 				),
 				'errors' => array(),
 			));
-			$default_items = apply_filters('dog__af_include_js', array());
+			$default_items = dog__get_option(self::OPTION_JS);
 	 		$value = $default_items ? implode("\n", $default_items) : '';
 			Dog_Form::render_form_field(array(
 				'wrapper' => array(),
@@ -59,7 +59,7 @@
 					'value' => 'dog_save_af_options',
 				),
 			));
-			Dog_Form::render_nonce_field('af-options');
+			Dog_Form::render_nonce_field('ao-options');
 			Dog_Form::render_honeypot_field();
 		?>
 		<p class="submit">
@@ -81,6 +81,15 @@
 					'value' => dog__txt('Elimină optimizarea'),
 					'class' => 'button',
 					'data-confirm' => dog__txt('Ești sigur că vrei să ștergi resursele optimizate?'),
+				),
+			));
+			Dog_Form::render_form_field(array(
+				'field' => array(
+					'tag' => 'button',
+					'type' => 'button',
+					'name' => 'detect',
+					'value' => dog__txt('Detectează resursele'),
+					'class' => 'button',
 				),
 			));
 		?>

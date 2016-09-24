@@ -6,7 +6,7 @@
     }
     if (dog__md.image_gallery.auto_init) {
       $('body').dog_md_image_gallery({
-        selector: '[rel^="dog-md-image-gallery"]'
+        selector: '[rel^="' + dog__md.image_gallery.rel_fragment + '"]'
       });
     }
   });
@@ -219,7 +219,7 @@
 
     function show_item(index, obj, $container) {
       var img_url = $(obj).attr(gallery_attr_url);
-      var download_url = $(obj).attr(gallery_attr_download) ? $(obj).attr(gallery_attr_download) : img_url;
+      var download_url = $(obj).attr(gallery_attr_download);
       if (dog__md.image_gallery.use_background_images) {
         $container.css('background-image', 'url(' + img_url + ')');
       } else {
@@ -234,11 +234,13 @@
         });
         $img.attr('src', img_url);
       }
-      var $a = $('<a></a>').appendTo($container);
-      $a.addClass('download');
-      $a.attr('href', download_url);
-      $a.attr('download', img_url.split('/').pop());
-      $a.html('&#8681;');
+      if (download_url) {
+        var $a = $('<a></a>').appendTo($container);
+        $a.addClass('download');
+        $a.attr('href', download_url);
+        $a.attr('download', img_url.split('/').pop());
+        $a.html('&#8681;');
+      }
     }
 
     return this.dog_md_gallery($.extend({

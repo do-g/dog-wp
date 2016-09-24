@@ -1,3 +1,8 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-dog__loop_content('_content-post-list');
+?><article class="entry single category">
+	<h1 class="entry-title"><?php single_cat_title() ?></h1>
+	<div class="entry-body"><?php
+		dog__loop_content('_content-post-list');
+	?></div>
+</article>

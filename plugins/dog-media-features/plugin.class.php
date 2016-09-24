@@ -100,8 +100,8 @@ class Dog_Media_Features {
 			}
 			$media_features['categories'][0] = dog__txt('Elimină toate categoriile');
 		}
-		wp_enqueue_style('dog_mf_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_sh_styles_shared'), null);
-	    wp_enqueue_script('dog_mf_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts_shared'), null, true);
+		wp_enqueue_style('dog_mf_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_sh_admin_styles'), null);
+	    wp_enqueue_script('dog_mf_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
 	    wp_localize_script('dog_mf_scripts', 'dog__mf', $media_features);
 	}
 
@@ -126,27 +126,19 @@ class Dog_Media_Features {
 		if (!isset($_REQUEST['action'])) {
 			return;
 		}
-		check_admin_referer('bulk-media');
 		$bulk_action = $_REQUEST['action'] != -1 ? $_REQUEST['action'] : $_REQUEST['action2'];
-		self::bulk_action_prepare($bulk_action);
-		$sendback = admin_url('upload.php');
-		if (isset($_REQUEST['paged'])) {
-			$pagenum = absint($_REQUEST['paged']);
-			$sendback = esc_url(add_query_arg('paged', $pagenum, $sendback));
+		if (!self::bulk_action_prepare($bulk_action)) {
+			return;
 		}
-		if (isset($_REQUEST['orderby'])) {
-			$orderby = $_REQUEST['orderby'];
-			$sendback = esc_url(add_query_arg('orderby', $orderby, $sendback));
-		}
-		if (isset($_REQUEST['order'])) {
-			$order = $_REQUEST['order'];
-			$sendback = esc_url(add_query_arg('order', $order, $sendback));
-		}
+		$sendback = esc_url_raw($_REQUEST['_wp_http_referer']);
 		wp_redirect($sendback);
 		exit;
 	}
 
-	private static function bulk_action_prepare($action) {
+	private static function bulk_action_prepare($action, $check_referer = true) {
+		if (!$action || $action == -1) {
+			return false;
+		}
 		$delimiter = '__';
 		$pos = strpos($action, $delimiter);
 		if ($pos === false) {
@@ -155,6 +147,9 @@ class Dog_Media_Features {
 		$custom_action = substr($action, 0, $pos);
 		if (!$custom_action) {
 			return false;
+		}
+		if ($check_referer) {
+			check_admin_referer('bulk-media');
 		}
 		$action_data = substr($action, $pos + strlen($delimiter));
 		return call_user_func(array(__CLASS__, 'bulk_action_' . $custom_action), $action_data);
@@ -182,6 +177,9 @@ class Dog_Media_Features {
 	public static function filter_mime_types($mime_types) {
 		return apply_filters('dog__filter_mime_types', array_merge($mime_types, array(
 			'application/pdf' => array(dog__txt('PDFs'), dog__txt('Manage PDFs'), _n_noop('PDF <span class="count">(%s)</span>', 'PDFs <span class="count">(%s)</span>')),
+			'application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document' => array(dog__txt('Documents'), dog__txt('Manage Documents'), _n_noop('Document <span class="count">(%s)</span>', 'Documents <span class="count">(%s)</span>')),
+			'application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => array(dog__txt('Sheets'), dog__txt('Manage Sheets'), _n_noop('Sheet <span class="count">(%s)</span>', 'Sheets <span class="count">(%s)</span>')),
+			'application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.openxmlformats-officedocument.presentationml.slideshow' => array(dog__txt('Presentations'), dog__txt('Manage Presentations'), _n_noop('Presentation <span class="count">(%s)</span>', 'Presentations <span class="count">(%s)</span>')),
 		)));
 	}
 
@@ -196,7 +194,7 @@ class Dog_Media_Features {
 			return dog__ajax_response_error(array('message' => dog__txt('Nu ai selectat nicio acțiune')));
 		} else if (!$_REQUEST['media']) {
 			return dog__ajax_response_error(array('message' => dog__txt('Nu ai selectat niciun obiect')));
-		} else if (!self::bulk_action_prepare($_POST['custom_action'])) {
+		} else if (!self::bulk_action_prepare($_POST['custom_action'], false)) {
 			return dog__ajax_response_error(array('message' => dog__txt('Sistemul a întâmpinat o eroare. Categoriile nu pot fi modificate')));
 		}
 		return dog__ajax_response_ok();

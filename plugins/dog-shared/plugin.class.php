@@ -15,7 +15,7 @@ class Dog_Shared {
 		}
 		self::register_session();
 		add_action('plugins_loaded', array(__CLASS__, 'register_labels'));
-		add_action('wp_enqueue_scripts', array(__CLASS__, 'register_site_assets'));
+		add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_site_assets'));
 		add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_admin_assets'));
 		add_action('wp_ajax_' . self::AJAX_CALLBACK, array(__CLASS__, 'ajax_handler'));
 		add_action('wp_ajax_nopriv_' . self::AJAX_CALLBACK, array(__CLASS__, 'ajax_handler'));
@@ -24,17 +24,16 @@ class Dog_Shared {
 		self::$_initialized = true;
 	}
 
-	public static function register_site_assets() {
-		wp_enqueue_script('dog_sh_scripts_shared', dog__plugin_url('shared.js', self::PLUGIN_SLUG), array('vendor_scripts'), null, true);
-		wp_localize_script('dog_sh_scripts_shared', 'dog__sh', self::get_js_vars());
+	public static function enqueue_site_assets() {
+		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('vendor_scripts'), null, true);
+		wp_localize_script('dog_sh_scripts', 'dog__sh', self::get_js_vars());
 	}
 
 	public static function enqueue_admin_assets() {
-		wp_enqueue_style('dog_sh_styles_shared', dog__plugin_url('shared.css', self::PLUGIN_SLUG), null, null);
-		wp_enqueue_style('dog_sh_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_sh_styles_shared'), null);
-		wp_enqueue_script('dog_sh_scripts_shared', dog__plugin_url('shared.js', self::PLUGIN_SLUG), array('jquery'), null, true);
-		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts_shared'), null, true);
-		wp_localize_script('dog_sh_scripts_shared', 'dog__sh', self::get_js_vars());
+		wp_enqueue_style('dog_sh_admin_styles', dog__plugin_url('admin.css', self::PLUGIN_SLUG), null, null);
+		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('shared.js', self::PLUGIN_SLUG), array('jquery'), null, true);
+		wp_enqueue_script('dog_sh_admin_scripts', dog__plugin_url('admin.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
+		wp_localize_script('dog_sh_scripts', 'dog__sh', self::get_js_vars());
 	}
 
 	public static function get_js_vars() {
@@ -50,6 +49,7 @@ class Dog_Shared {
 			'ajax_response_status_error' => DOG__AJAX_RESPONSE_STATUS_ERROR,
 			'labels' => array(
 				'alert_response_error_nonce' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi validat'),
+				'alert_response_error' => dog__txt('Sistemul a întâmpinat o eroare. Răspunsul nu poate fi procesat'),
 				'alert_request_error' => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
 			),
 		));

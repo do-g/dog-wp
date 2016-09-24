@@ -9,6 +9,9 @@ if ($frm_errs) {
 	foreach ($frm_errs as $type => $message) { ?>
 		<p class="form-message form-error form-error-<?= esc_attr($type) ?>"><?= esc_html($message) ?></p>
 	<?php }
-} else { ?>
-	<p class="form-message form-success"><?= esc_html(dog__get_flash_success('form')) ?></p>
-<?php }
+} else {
+	$success_message = dog__get_flash_success('form');
+	if ($success_message) { ?>
+		<p class="form-message form-success"><?= esc_html($success_message) ?></p>
+	<?php }
+}
