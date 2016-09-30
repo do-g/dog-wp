@@ -6,6 +6,7 @@ class Dog_Sample {
 
 	const PLUGIN_SLUG = 'dog-sample';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public static function init() {
@@ -23,6 +24,23 @@ class Dog_Sample {
 		} else {
 			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
+	}
+
+	private static function load_config() {
+		return apply_filters('dog__sp_options', array());
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

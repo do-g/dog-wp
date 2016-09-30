@@ -14,6 +14,7 @@ class Dog_Api_YouTube {
 	protected $url_fragment;
 	private $error;
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public function __construct() {}
@@ -36,23 +37,34 @@ class Dog_Api_YouTube {
 	}
 
 	public static function enqueue_assets() {
-		$config = self::config();
-		if ($config['load_js_api']) {
+		if (self::config('load_js_api')) {
 			wp_enqueue_script('youtube_js_api', self::URL_JS_API, null, null, true);
 			wp_enqueue_script('dog_ay_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts', 'youtube_js_api'), null, true);
 		}
 	}
 
-	private static function config() {
+	private static function load_config() {
 		return apply_filters('dog__ay_options', array(
 			'server_api_key' => null,
 			'load_js_api' => false,
 		));
 	}
 
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
+	}
+
 	protected function get_url($params = array()) {
-		$config = self::config();
-		$params = array_merge(array('key' => $config['server_api_key']), $params);
+		$params = array_merge(array('key' => self::config('server_api_key')), $params);
 		return $this->base_url . $this->url_fragment . '?' . http_build_query($params);
 	}
 

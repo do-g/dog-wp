@@ -3,7 +3,7 @@
 * Plugin Name: DOG Modal & Gallery
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-sample
 * Description: Adds modal popup & image gallery features to website
-* Version: 1.0.38
+* Version: 1.0.39
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

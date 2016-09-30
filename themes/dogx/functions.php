@@ -8,18 +8,11 @@ function dogx__enqueue_assets_low_priority() {
 		wp_enqueue_style('styles', dog__css_url('styles'), array('base_styles'), null);
 		wp_enqueue_script('base_vendor_scripts', dog__base_js_url('vendor'), array('jquery'), null, true);
 		wp_enqueue_script('vendor_scripts', dog__js_url('vendor'), array('base_vendor_scripts'), null, true);
-		wp_enqueue_script('base_scripts', dog__base_js_url('scripts'), array('dog_sh_scripts_shared'), null, true);
+		wp_enqueue_script('base_scripts', dog__base_js_url('scripts'), array('dog_sh_scripts'), null, true);
 		wp_enqueue_script('scripts', dog__js_url('scripts'), array('base_scripts'), null, true);
 	}
 }
 
 function dogx__dependencies() {
 	return array('Dog_Form');
-}
-
-function dogx__theme_setup() {
-	register_nav_menu('location-main-menu', 'Locație Meniu Principal');
-	add_image_size('xsmall', 400,  9999);
-	add_image_size('small',  600,  9999);
-	add_image_size('xlarge', 1200, 9999);
 }

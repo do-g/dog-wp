@@ -9,6 +9,7 @@ class Dog_Media_Features {
 	const DEFAULT_TAXONOMY_SLUG = 'media';
 	const BULK_ACTION_MEDIA_CATEGORY_PREFIX = 'toggle_category__';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public static function init() {
@@ -29,15 +30,19 @@ class Dog_Media_Features {
 			add_filter('upload_mimes', array(__CLASS__, 'allow_mime_types'));
 			add_filter('dog__sh_js_nonces', array(__CLASS__, 'nonces'));
 			self::register_media_taxonomy();
+			add_action(self::config('name') . '_add_form_fields', 'dog_admin__render_taxonomy_add_css_class', 10);
+			add_action(self::config('name') . '_edit_form_fields', 'dog_admin__render_taxonomy_edit_css_class', 10);
+			add_action('create_' . self::config('name'), 'dog_admin__save_taxonomy_css_class');
+			add_action('edited_' . self::config('name'), 'dog_admin__save_taxonomy_css_class');
 		} else {
 			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
 	}
 
-	private static function config() {
+	private static function load_config() {
 		return apply_filters('dog__mf_config', array(
 			'name' => self::DEFAULT_TAXONOMY_NAME,
-			'args' => array(
+			'taxonomy' => array(
 				'labels' => array(
 		        	'name' => dog__txt('Categorii Media'),
 		        	'singular_name' => dog__txt('Categorie Media'),
@@ -63,21 +68,32 @@ class Dog_Media_Features {
 		));
 	}
 
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
+	}
+
 	public static function register_media_taxonomy() {
-		$config = self::config();
-		register_taxonomy($config['name'], 'attachment', $config['args']);
+		register_taxonomy(self::config('name'), 'attachment', self::config('taxonomy'));
 	}
 
 	public static function enqueue_assets($hook) {
 		if ($hook != 'upload.php') {
 	        return;
 	    }
-	    $config = self::config();
 		$cats = get_terms(array(
-		    'taxonomy' => $config['name'],
+		    'taxonomy' => self::config('name'),
 		    'hide_empty' => false,
 		    'orderby' => 'title',
-		    'order' => 'desc',
+		    'order' => 'asc',
 		));
 		$nonces = array();
 		$nonces[dog__nonce_var_key('bulk-category-switch')] = wp_create_nonce(dog__string_to_key('bulk-category-switch'));
@@ -95,10 +111,10 @@ class Dog_Media_Features {
 			'categories' => array(),
 		);
 		if ($cats) {
+			$media_features['categories'][self::BULK_ACTION_MEDIA_CATEGORY_PREFIX . 0] = dog__txt('Elimină toate categoriile');
 			foreach ($cats as $c) {
-				$media_features['categories'][$c->term_id] = $c->name;
+				$media_features['categories'][self::BULK_ACTION_MEDIA_CATEGORY_PREFIX . $c->term_id] = $c->name;
 			}
-			$media_features['categories'][0] = dog__txt('Elimină toate categoriile');
 		}
 		wp_enqueue_style('dog_mf_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_sh_admin_styles'), null);
 	    wp_enqueue_script('dog_mf_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
@@ -156,7 +172,6 @@ class Dog_Media_Features {
 	}
 
 	public static function bulk_action_toggle_category($cat_id) {
-		$config = self::config();
 		$cat_id = intval($cat_id);
 		$ids = array_map('intval', $_REQUEST['media']);
 		if (empty($ids)) {
@@ -164,11 +179,11 @@ class Dog_Media_Features {
 		}
 		foreach ($ids as $id) {
 			if (!$cat_id) {
-				wp_delete_object_term_relationships($id, $config['name']);
-			} else if (has_term($cat_id, $config['name'], $id)) {
-				wp_remove_object_terms($id, $cat_id, $config['name']);
+				wp_delete_object_term_relationships($id, self::config('name'));
+			} else if (has_term($cat_id, self::config('name'), $id)) {
+				wp_remove_object_terms($id, $cat_id, self::config('name'));
 			} else {
-				wp_add_object_terms($id, array($cat_id), $config['name']);
+				wp_add_object_terms($id, array($cat_id), self::config('name'));
 			}
 		}
 		return true;

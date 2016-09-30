@@ -31,7 +31,7 @@ class Dog_Shared {
 
 	public static function enqueue_admin_assets() {
 		wp_enqueue_style('dog_sh_admin_styles', dog__plugin_url('admin.css', self::PLUGIN_SLUG), null, null);
-		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('shared.js', self::PLUGIN_SLUG), array('jquery'), null, true);
+		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('jquery'), null, true);
 		wp_enqueue_script('dog_sh_admin_scripts', dog__plugin_url('admin.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
 		wp_localize_script('dog_sh_scripts', 'dog__sh', self::get_js_vars());
 	}

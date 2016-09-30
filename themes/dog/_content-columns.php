@@ -8,7 +8,7 @@ get_header();
 			dog__include_template('sidebar');
 		} ?>
 		<div class="content-column main"<?php if ($tpl_data['itemlist']) { ?> itemscope itemtype="http://schema.org/ItemList"<?php } ?>><?php
-			dog__include_template($tpl_data['template']);
+			dog__include_template($tpl_data['template'], $tpl_data);
 		?></div>
 		<?php if (!DOG__SIDEBAR_ON_LEFT) {
 			dog__include_template('sidebar');

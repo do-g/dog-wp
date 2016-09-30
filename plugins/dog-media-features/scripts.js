@@ -20,10 +20,12 @@ jQuery(document).ready(function(){
 			class: 'button media-button button-primary button-large apply-selected-button'
 		}).text(dog__mf.labels.apply_switch_category).click(dog__mf_switch_category);
 	}
+	var cid;
 	for (var i in dog__mf.categories) {
+		cid = i.replace(dog__mf.switch_category_action_prefix, '');
 		var $option = jQuery('<option></option>').appendTo($select);
-		$option.attr('value', dog__mf.switch_category_action_prefix + i);
-		if (!parseInt(i)) {
+		$option.attr('value', i);
+		if (!parseInt(cid)) {
 			$option.text(dog__mf.categories[i]);
 		} else {
 			$option.text(dog__mf.labels.switch_category.replace('${cat}', dog__mf.categories[i]));

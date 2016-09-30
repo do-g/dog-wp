@@ -1,0 +1,10 @@
+svg, img[src*=".svg"] {
+	min-width: 50px !important;
+	min-height: 50px !important;
+	max-width: 150px !important;
+	max-height: 150px !important;
+}
+
+.inline-table {
+	display: inline-table;
+}

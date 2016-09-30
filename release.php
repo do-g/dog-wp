@@ -58,6 +58,7 @@ $dest = "{$path}/{$archive_name}";
 echo "Establishing FTP connection\n";
 $conn_id = ftp_connect('ftp.dorinoanagurau.ro');
 $login_result = ftp_login($conn_id, 'wp@public.dorinoanagurau.ro', 'cb3!c)#~VT]-');
+ftp_pasv($conn_id, true);
 echo "Deleting archive: {$old_dest}\n";
 ftp_delete($conn_id, $old_dest);
 echo "Uploading archive: {$dest}\n";

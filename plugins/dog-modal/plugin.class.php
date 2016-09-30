@@ -7,6 +7,7 @@ class Dog_Modal {
 	const PLUGIN_SLUG = 'dog-modal';
 	const GALLERY_REL_FRAGMENT = 'dog-md-image-gallery';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public static function init() {
@@ -27,10 +28,8 @@ class Dog_Modal {
 		}
 	}
 
-	public static function enqueue_assets() {
-		wp_enqueue_style('dog_md_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('base_styles'));
-		wp_enqueue_script('dog_md_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
-		$js_vars = apply_filters('dog__md_options', array(
+	private static function load_config() {
+		return apply_filters('dog__md_options', array(
 			'popup' => array(
 				'auto_init' => false,
 			),
@@ -50,6 +49,25 @@ class Dog_Modal {
 				'rel_fragment' => self::GALLERY_REL_FRAGMENT,
 			),
 		));
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
+	}
+
+	public static function enqueue_assets() {
+		wp_enqueue_style('dog_md_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('base_styles'));
+		wp_enqueue_script('dog_md_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
+		$js_vars = apply_filters('dog__md_options', self::config());
 		wp_localize_script('dog_md_scripts', 'dog__md', $js_vars);
 	}
 

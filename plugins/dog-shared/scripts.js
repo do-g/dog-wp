@@ -63,6 +63,14 @@ function dog__shared_lib() {
     return offset;
   }
 
+  this.defined_and_not_null = function (obj) {
+    return typeof obj !== 'undefined' && obj !== null;
+  }
+
+  this.defined_and_not_empty = function (obj) {
+    return this.defined_and_not_null(obj) && obj !== '';
+  }
+
   /***** ajax *****/
 
   this.get_nonce_name = function () {

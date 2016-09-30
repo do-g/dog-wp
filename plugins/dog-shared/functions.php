@@ -448,6 +448,15 @@ function dog__merge_css_classes($default_class, $user_class) {
 	return $class;
 }
 
+function dog__get_var_from_css_class($css_class, $var_prefix) {
+	$classes = explode(' ', $css_class);
+	foreach ($classes as $c) {
+		if (strpos($c, $var_prefix) !== false) {
+			return substr($c, strlen($var_prefix));
+		}
+	}
+}
+
 function dog__site_domain($strict = false) {
 	$parts = explode('//', trim(site_url(), '/'));
 	if ($strict) {
@@ -582,7 +591,7 @@ function dog__get_file_output($filepath, $tpl_data = null) {
 
 function dog__get_featured_image_url($size = 'full', $post_id = null) {
 	$id = get_post_thumbnail_id($post_id);
-	return esc_url($id ? reset(wp_get_attachment_image_src($id, $size)) : null);
+	return esc_url($id ? dog__get_attachment_image_url($size, $id) : null);
 }
 
 function dog__get_attachment_url($id = null) {

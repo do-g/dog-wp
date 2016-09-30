@@ -3,7 +3,7 @@
 * Plugin Name: DOG API YouTube
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-api-youtube
 * Description: Connects with the YouTube Data API
-* Version: 1.0.13
+* Version: 1.0.15
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

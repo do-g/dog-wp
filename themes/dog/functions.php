@@ -19,25 +19,95 @@ if (DOG__ENV == 'dev') {
 
 $dog__dependencies = dog__extend_with('dependencies', array('Dog_Shared'));
 
-$dog__schemaorg_page_types = dog__extend_with('schemaorg_page_types', array(
+$dog__schemaorg_page_types = apply_filters('dog__schemaorg_page_types', array(
 	'AboutPage' => array('despre', 'about'),
 	'ContactPage' => array('contact', 'contact-us'),
 	'CollectionPage' => array(),
 	'ItemPage' => array(),
 	'ProfilePage' => array(),
-	'SearchResultsPage' => array()
+	'SearchResultsPage' => array(),
 ));
 
-$dog__template_override = dog__extend_with('template_override', array(
-	'page-contact' => array('contact-us')
+$dog__template_override = apply_filters('dog__template_override', array(
+	'page-contact' => array('contact-us'),
 ));
+
+$dog__breadcrumbs = array();
+
+function dog__add_breadcrumb($label, $url = null, $options = array()) {
+	global $dog__breadcrumbs;
+	array_push($dog__breadcrumbs, array(
+		'label' => $label,
+		'url' => $url,
+		'options' => $options,
+	));
+}
+
+function dog__add_to_breadcrumbs($id, $options = array()) {
+	global $dog__breadcrumbs;
+	array_push($dog__breadcrumbs, array(
+		'id' => $id,
+		'options' => $options,
+	));
+}
+
+function dog__get_breadcrumbs() {
+	global $dog__breadcrumbs;
+	return $dog__breadcrumbs;
+}
+
+function dog__alter_footer_low_priority() {
+	$bc = dog__get_breadcrumbs();
+	if ($bc) {
+		echo "<script type=\"text/javascript\">\n";
+		echo "\tdog__sh.bc = [];\n";
+		foreach ($bc as $b) {
+			echo "\tdog__sh.bc.push(" . json_encode($b) . ");\n";
+		}
+		echo '</script>';
+	}
+	dog__call_x_function(__FUNCTION__);
+}
+
+function dog__set_query_args($query, $args) {
+	if ($args) {
+		foreach ($args as $k => $v) {
+			$query->set($k, $v);
+		}
+	}
+}
+
+function dog__query_exclude_taxonomy_children($query, $taxonomy = null) {
+	if ($query->tax_query->queries) {
+		foreach ($query->tax_query->queries as $i => $tax_query) {
+	      if (!$taxonomy || $tax_query['taxonomy'] === $taxonomy) {
+	         $query->tax_query->queries[$i]['include_children'] = false;
+	      }
+	    }
+	}
+}
+
+function dog__cancel_query($query) {
+	dog__set_query_args($query, array(
+		'category__in' => array(-999),
+	));
+}
+
+function dog__entry_css_class() {
+	$obj = get_queried_object();
+	if ($obj->term_id) {
+		return get_term_meta(get_queried_object_id(), DOG__ENTRY_CSS_CLASS_META_KEY, true);
+	} else {
+		return get_post_meta(get_queried_object_id(), DOG__ENTRY_CSS_CLASS_META_KEY, true);
+	}
+}
 
 function dog__include_template($filename, $tpl_data = null) {
 	include(locate_template($filename . '.php'));
 }
 
-function dog__loop_content($template) {
-	dog__include_template('_content-loop', array('template' => $template));
+function dog__loop_content($template, $data = array()) {
+	dog__include_template('_content-loop', array_merge(array('template' => $template), $data));
 }
 
 function dog__body_class($user_classes = array()) {
@@ -62,6 +132,10 @@ function dog__body_class($user_classes = array()) {
 				array_push($classes, "tag--{$t->slug}");
 			}
 		}
+	}
+	$entry_css_class = dog__entry_css_class();
+	if ($entry_css_class) {
+		$classes = array_merge($classes, explode(' ', $entry_css_class));
 	}
 	if (dog__lang_plugin_is_active()) {
 		array_push($classes, 'lang--' . dog__active_language());
@@ -193,9 +267,9 @@ function dog__send_form_mail_standard($custom_data = null) {
 }
 
 function dog__schema_page_type() {
-	global $dog__schemaorg_page_types, $post;
+	global $dog__schemaorg_page_types;
 	$current = get_queried_object();
-	if ($current->cat_ID) {
+	if ($current->term_id) {
 		$page_type = 'CollectionPage';
 	} else if ($current->post_type == 'post') {
 		$page_type = 'ItemPage';
@@ -236,6 +310,7 @@ function dog__override_template($template) {
 function dog__enqueue_assets_high_priority() {
 	wp_deregister_script('wp-embed');
 	wp_deregister_script('jquery');
+	wp_register_script('jquery', includes_url('js/jquery/jquery.js'), null, null, true);
 	dog__call_x_function(__FUNCTION__);
 }
 
@@ -248,8 +323,6 @@ function dog__enqueue_assets_low_priority() {
 	$cached_scripts = $dog_af_plugin_active ? Dog_Asset_Optimiser::has_cached_scripts() : false;
 	if ($cached_scripts !== false) {
 		wp_enqueue_script('cache_script', $cached_scripts, null, null, true);
-	} else {
-		wp_enqueue_script('jquery', includes_url('js/jquery/jquery.js'), null, null, true);
 	}
 	dog__call_x_function(__FUNCTION__);
 }
@@ -260,11 +333,11 @@ function dog__dequeue_styles() {
 }
 
 function dog__js_vars($vars) {
-	return array_merge($vars, dog__extend_with('js_vars', array()));
+	return apply_filters(__FUNCTION__, $vars);
 }
 
 function dog__nonces($nonces) {
-	$list = dog__extend_with('nonces', array());
+	$list = apply_filters(__FUNCTION__, array());
 	return array_merge($nonces, dog__to_nonces($list));
 }
 
@@ -275,22 +348,47 @@ function dog__async_defer($url) {
 	return $url;
 }
 
-function dog__enable_query_tags($wp_query) {
+function dog__alter_main_query($wp_query) {
 	if ($wp_query->get('tag')) {
 		$wp_query->set('post_type', 'any');
 	}
+	dog__call_x_function(__FUNCTION__, $wp_query);
 }
 
 function dog__widgets_init() {
-	register_sidebar(array(
-		'name'          => 'Sidebar',
-		'id'            => 'sidebar',
-		'before_widget' => '<div>',
-		'after_widget'  => '</div>',
-		'before_title'  => '<h2>',
-		'after_title'   => '</h2>',
+	$sidebars = apply_filters(__FUNCTION__, array(
+		array(
+			'name'          => dog__txt('Sidebar'),
+			'id'            => 'sidebar',
+			'before_widget' => '<div>',
+			'after_widget'  => '</div>',
+			'before_title'  => '<h2>',
+			'after_title'   => '</h2>',
+		),
 	));
-	dog__call_x_function('register_sidebar');
+	foreach ($sidebars as $sidebar) {
+		register_sidebar($sidebar);
+	}
+	dog__call_x_function(__FUNCTION__);
+}
+
+function dog__image_sizes() {
+	$sizes = apply_filters(__FUNCTION__, array(
+		array('small',  600,  9999),
+		array('xlarge', 1200, 9999),
+	));
+	foreach ($sizes as $size) {
+		add_image_size($size[0], $size[1], $size[2]);
+	}
+}
+
+function dog__menus() {
+	$menus = apply_filters(__FUNCTION__, array(
+		array('location-main-menu', dog__txt('Locație Meniu Principal')),
+	));
+	foreach ($menus as $menu) {
+		register_nav_menu($menu[0], $menu[1]);
+	}
 }
 
 function dog__theme_setup() {
@@ -298,8 +396,10 @@ function dog__theme_setup() {
 	add_theme_support('title-tag');
 	add_theme_support('post-thumbnails');
 	add_theme_support('custom-header');
-	add_editor_style('css/editor.css');
+	add_editor_style(array('css/editor-style.css'));
+	dog__image_sizes();
 	add_filter('image_size_names_choose', 'dog__custom_image_sizes');
+	dog__menus();
 	dog__call_x_function(__FUNCTION__);
 }
 
@@ -327,17 +427,16 @@ function dog__handle_post() {
 	if (dog__is_post()) {
 		$action_hook = $_POST['action'];
 		$callable = "dog__handle_post_{$action_hook}";
-		if (is_callable($callable)) {
+		$callable_x = "dogx__handle_post_{$action_hook}";
+		if (is_callable($callable_x)) {
+			call_user_func($callable_x);
+		} else if (is_callable($callable)) {
 			call_user_func($callable);
 		}
 	}
 }
 
 function dog__handle_post_contact() {
-	$callable = 'dogx__handle_post_contact';
-	if (is_callable($callable)) {
-		return call_user_func($callable);
-	}
 	if (dog__is_post('contact_submit')) {
 		Dog_Form::whitelist_keys(array(
 			'contact_name',
@@ -450,9 +549,10 @@ if (!is_admin()) {
 	add_filter('clean_url', 'dog__async_defer', 11, 1);
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_high_priority', 0);
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99990);
-	add_action('pre_get_posts', 'dog__enable_query_tags');
+	add_action('pre_get_posts', 'dog__alter_main_query');
 	add_action('wp_print_styles', 'dog__dequeue_styles', 99999);
 	add_action('wp', 'dog__handle_post');
+	add_action('wp_footer', 'dog__alter_footer_low_priority', 990);
 	remove_action('wp_head', 'rsd_link'); // remove really simple discovery link
 	remove_action('wp_head', 'wp_generator'); // remove wordpress version
 	remove_action('wp_head', 'wlwmanifest_link'); // remove wlwmanifest.xml (needed to support windows live writer)

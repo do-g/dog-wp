@@ -14,10 +14,10 @@ if ($post_tags) {
 		'orderby' => 'rand'
 	));
 	if ($query->have_posts()) { ?>
-		<div class="list related">
+		<div class="list related" itemscope itemtype="http://schema.org/ItemList">
 		<?php while ($query->have_posts()) {
 			$query->the_post();
-			dog__include_template('_content-post-list');
+			dog__include_template('_content-post-teaser');
 		} ?>
 		</div>
 	<?php }

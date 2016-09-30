@@ -9,6 +9,7 @@ class Dog_Shortcode_Youtube {
 	const TYPE_PLAYLIST = 'playlist';
 	const TYPE_VIDEO = 'video';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 	private static $_recording = false;
 	private static $_items = array();
@@ -33,7 +34,7 @@ class Dog_Shortcode_Youtube {
 		}
 	}
 
-	public static function config() {
+	private static function load_config() {
 		return apply_filters('dog__sy_options', array(
 			'templates' => array(
 				'playlist' => dog__sibling_path('youtube-playlist.tpl.php', __FILE__),
@@ -52,6 +53,19 @@ class Dog_Shortcode_Youtube {
 			),
 			'gallery_rel' => 'dog-md-youtube-gallery',
 		));
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
 	}
 
 	public static function parse($attrs) {
@@ -77,7 +91,6 @@ class Dog_Shortcode_Youtube {
 	}
 
 	private static function load_playlist($attrs) {
-		$config = self::config();
 		$service = new Dog_Api_YouTube_Playlists();
 		$response = $service->get($attrs['id'], array(
 			'part' => 'snippet',
@@ -85,10 +98,10 @@ class Dog_Shortcode_Youtube {
 		if ($response) {
 			if ($response->items) {
 				foreach ($response->items as $item) {
-					return dog__get_file_output($config['templates']['playlist'], array(
+					return dog__get_file_output(self::config('templates', 'playlist'), array(
 						'item' => $item,
 						'attrs' => $attrs,
-						'config' => $config,
+						'config' => self::config(),
 					));
 				}
 			} else {
@@ -100,7 +113,6 @@ class Dog_Shortcode_Youtube {
 	}
 
 	private static function load_video($attrs) {
-		$config = self::config();
 		$service = new Dog_Api_YouTube_Videos();
 		$response = $service->get($attrs['id'], array(
 			'part' => 'snippet',
@@ -108,10 +120,10 @@ class Dog_Shortcode_Youtube {
 		if ($response) {
 			if ($response->items) {
 				foreach ($response->items as $item) {
-					return dog__get_file_output($config['templates']['video'], array(
+					return dog__get_file_output(self::config('templates', 'video'), array(
 						'item' => $item,
 						'attrs' => $attrs,
-						'config' => $config,
+						'config' => self::config(),
 					));
 				}
 			} else {
@@ -123,7 +135,6 @@ class Dog_Shortcode_Youtube {
 	}
 
 	public static function load() {
-		$config = self::config();
 		$html_items = array();
 		$playlist_ids = array_keys(self::$_playlists);
 		$service = new Dog_Api_YouTube_Playlists();
@@ -133,10 +144,10 @@ class Dog_Shortcode_Youtube {
 		if ($response) {
 			if ($response->items) {
 				foreach ($response->items as $item) {
-					$html_items[$item->id] = dog__get_file_output($config['templates']['playlist'], array(
+					$html_items[$item->id] = dog__get_file_output(self::config('templates', 'playlist'), array(
 						'item' => $item,
 						'attrs' => self::$_playlists[$item->id],
-						'config' => $config,
+						'config' => self::config(),
 					));
 				}
 			} else {
@@ -153,10 +164,10 @@ class Dog_Shortcode_Youtube {
 		if ($response) {
 			if ($response->items) {
 				foreach ($response->items as $item) {
-					$html_items[$item->id] = dog__get_file_output($config['templates']['video'], array(
+					$html_items[$item->id] = dog__get_file_output(self::config('templates', 'video'), array(
 						'item' => $item,
 						'attrs' => self::$_videos[$item->id],
-						'config' => $config,
+						'config' => self::config(),
 					));
 				}
 			} else {

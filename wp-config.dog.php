@@ -15,6 +15,7 @@ define('DOG__HP_TIMER_NAME', 'hon6c0ef5ece8c4765116c845babxgxx');
 define('DOG__HP_JAR_NAME', 'dat4c0ef5ece8c4765116c845babcea6');
 define('DOG__HP_TIMER_SECONDS', 1);
 define('DOG__TIMEZONE', 'Europe/Bucharest');
+define('DOG__ENTRY_CSS_CLASS_META_KEY', 'dog_entry_css_class');
 define('DOG__SESSION_KEY_FLASH', 'flash');
 define('DOG__SESSION_KEY_SUCCESS', 'success');
 define('DOG__SESSION_KEY_ERROR', 'error');
