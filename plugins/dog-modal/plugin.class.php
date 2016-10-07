@@ -44,7 +44,8 @@ class Dog_Modal {
 			),
 			'image_gallery' => array(
 				'auto_init' => false,
-				'auto_advance_delay' => 0,
+				'loop' => true,
+				'slideshow_delay' => 0,
 				'use_background_images' => false,
 				'rel_fragment' => self::GALLERY_REL_FRAGMENT,
 			),

@@ -1,3 +1,5 @@
+/***** html elements *****/
+
 * {
 	box-sizing: border-box;
 }
@@ -12,6 +14,15 @@ body {
 	padding: 0;
 }
 
+/***** shared classes *****/
+
+.notransition {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+
 .hide {
 	display: none;
 }
@@ -21,8 +32,6 @@ body {
 	margin: 0 auto;
 	padding: 0 20px;
 }
-
-/***** general & utils *****/
 
 .clearfix:before,
 .clearfix:after {

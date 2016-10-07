@@ -14,7 +14,7 @@ body.dog-md {
 	z-index: -1;
 	opacity: 0;
 	background-color: rgba(0, 0, 0, 0.9);
-	transition: all .3s;
+	transition: opacity .3s;
 }
 
 body.dog-md .dog-md-window {
@@ -72,7 +72,7 @@ body.dog-md .dog-md-window {
 	height: 100%;
 	display: flex;
 	flex-wrap: nowrap;
-	transition: all .3s;
+	transition: left .3s;
 	position: relative;
 	left: 0;
 }
@@ -138,9 +138,25 @@ body.dog-md .dog-md-window {
 	background-color: rgba(0, 0, 0, 0.8);
 }
 
+.dog-md-gallery.left-end nav img.left {
+	display: none;
+}
+
+.dog-md-gallery.loop.left-end nav img.left {
+	display: block;
+}
+
 .dog-md-gallery nav img.right {
 	left: inherit;
 	right: 10px;
+}
+
+.dog-md-gallery.right-end nav img.right {
+	display: none;
+}
+
+.dog-md-gallery.loop.right-end nav img.right {
+	display: block;
 }
 
 .dog-md-image-gallery li .download {

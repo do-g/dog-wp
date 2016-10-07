@@ -9,6 +9,8 @@ class Dog_Sample {
 	private static $_config = array();
 	private static $_dependencies = array();
 
+	/***** INIT *****/
+
 	public static function init() {
 		if (self::$_initialized) {
 			return;
@@ -25,6 +27,8 @@ class Dog_Sample {
 			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
 	}
+
+	/***** CONFIG *****/
 
 	private static function load_config() {
 		return apply_filters('dog__sp_options', array());

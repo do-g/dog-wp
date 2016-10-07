@@ -1,10 +1,12 @@
 <?php
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-$gallery = $tpl_data['attrs']['gallery'] ? $tpl_data['attrs']['gallery'] : $tpl_data['item']->snippet->playlistId;
+$rel = $tpl_data['config']['gallery_rel'];
+$gallery = $tpl_data['attrs'] && array_key_exists('gallery', $tpl_data['attrs']) ? $tpl_data['attrs']['gallery'] : $tpl_data['item']->snippet->playlistId;
 $link_attrs = array(
 	'data-vid' => $tpl_data['item']->snippet->resourceId->videoId,
 	'data-pid' => $tpl_data['item']->snippet->playlistId,
-	'rel' => "{$tpl_data['config']['gallery_rel']}[{$gallery}]",
+	'rel' => $gallery ? "{$rel}[{$gallery}]" : $rel,
+	'title' => $tpl_data['item']->snippet->title,
 );
 if ($tpl_data['config']['url']['playlist_video']) {
 	$link_attrs['href'] = dog__replace_template_vars($tpl_data['config']['url']['playlist_video'], array(

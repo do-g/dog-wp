@@ -56,7 +56,7 @@ function dog__get_breadcrumbs() {
 	return $dog__breadcrumbs;
 }
 
-function dog__alter_footer_low_priority() {
+function dog__render_custom_breadcrumbs_script() {
 	$bc = dog__get_breadcrumbs();
 	if ($bc) {
 		echo "<script type=\"text/javascript\">\n";
@@ -66,7 +66,6 @@ function dog__alter_footer_low_priority() {
 		}
 		echo '</script>';
 	}
-	dog__call_x_function(__FUNCTION__);
 }
 
 function dog__set_query_args($query, $args) {
@@ -552,7 +551,7 @@ if (!is_admin()) {
 	add_action('pre_get_posts', 'dog__alter_main_query');
 	add_action('wp_print_styles', 'dog__dequeue_styles', 99999);
 	add_action('wp', 'dog__handle_post');
-	add_action('wp_footer', 'dog__alter_footer_low_priority', 990);
+	add_action('wp_footer', 'dog__render_custom_breadcrumbs_script', 990);
 	remove_action('wp_head', 'rsd_link'); // remove really simple discovery link
 	remove_action('wp_head', 'wp_generator'); // remove wordpress version
 	remove_action('wp_head', 'wlwmanifest_link'); // remove wlwmanifest.xml (needed to support windows live writer)

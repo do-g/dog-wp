@@ -30,6 +30,7 @@ class Dog_Modal_Youtube {
 	private static function load_config() {
 		return apply_filters('dog__my_options', array(
 			'auto_init' => false,
+			'loop' => true,
 			'auto_advance_delay' => 0,
 			'rel_fragment' => self::REL_FRAGMENT,
 		));

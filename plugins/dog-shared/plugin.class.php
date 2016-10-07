@@ -38,6 +38,7 @@ class Dog_Shared {
 
 	public static function get_js_vars() {
 		$vars = apply_filters('dog__sh_js_vars', array(
+			'is_debug' => dog__is_debug(),
 			'theme_url' => dog__theme_url('/'),
 			'ajax_url' => admin_url('admin-ajax.php'),
 			'ajax_callback' => self::AJAX_CALLBACK,

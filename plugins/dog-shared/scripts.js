@@ -1,6 +1,7 @@
 function dog__shared_lib() {
 
   var self = this;
+  var which_transitionend;
 
   /***** usefull functions *****/
 
@@ -63,12 +64,61 @@ function dog__shared_lib() {
     return offset;
   }
 
+  this.null_or_undefined = function (obj) {
+    return obj === undefined || obj === null;
+  }
+
   this.defined_and_not_null = function (obj) {
-    return typeof obj !== 'undefined' && obj !== null;
+    return obj !== undefined && obj !== null;
   }
 
   this.defined_and_not_empty = function (obj) {
     return this.defined_and_not_null(obj) && obj !== '';
+  }
+
+  this.transitionend = function () {
+    if (which_transitionend) {
+      return which_transitionend;
+    }
+    var el = document.createElement('tmpelem');
+    var transitions = {
+      'transition': 'transitionend',
+      'OTransition': 'oTransitionEnd',
+      'MozTransition': 'transitionend',
+      'WebkitTransition': 'webkitTransitionEnd'
+    }
+    var t;
+    for(t in transitions){
+      if(el.style[t] !== undefined) {
+        return transitions[t];
+      }
+    }
+  }
+
+  this.skip_transition = function (elem, callback) {
+    var $elem = this.to_jquery(elem);
+    $elem.addClass('notransition');
+    callback();
+    $elem.get(0).offsetHeight;
+    $elem.removeClass('notransition');
+  }
+
+  this.is_debug = function () {
+    return dog__sh.is_debug;
+  }
+
+  this.debug = function (message) {
+    if (this.is_debug()) {
+      console.log.apply(console, arguments);
+    }
+  }
+
+  /**
+   * return true if event did not originate on the element it was attached to
+   * but rather bubbled up from descendants of that element
+   */
+  this.event_has_bubbled = function (event) {
+    return event && event.target !== event.currentTarget;
   }
 
   /***** ajax *****/
@@ -101,7 +151,7 @@ function dog__shared_lib() {
       method: 'POST',
       data: this.prepare_ajax_data(data),
       beforeSend: function(jqXHR, settings) {
-        console.log(settings);
+        self.debug('AJAX Request: ', settings);
         if (callbacks.before) {
           return callbacks.before(settings);
         }
@@ -109,7 +159,7 @@ function dog__shared_lib() {
     };
     jQuery.extend(ajax_options, options);
     jQuery.ajax(ajax_options).done(function(response, textStatus, jqXHR) {
-      console.log(response);
+      self.debug('AJAX Response', response);
       self.process_ajax_response(response, ajax_options, callbacks);
     }).fail(function(jqXHR, textStatus, errorThrown) {
       if (callbacks.fail) {
@@ -368,20 +418,70 @@ jQuery.fn.removeClassWithPrefix = function(prefix) {
   });
 }
 
-jQuery.fn.preserveAspectRatio = function(ratio) {
+jQuery.fn.cover = function() {
+  options = jQuery.extend({
+    fixed: 'w',
+    ratio: null
+  }, options);
   return this.each(function(n, elem) {
-    ratio = ratio ? ratio : jQuery(elem).attr('data-ratio');
+    var $elem, $parent, ratio;
+    $elem = jQuery(elem);
+    $elem.removeAttr('width height');
+    $elem.css({
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '100%',
+      height: 'auto'
+    });
+    ratio = options.ratio || $elem.attr('data-ratio');
+    if (ratio) {
+      $elem.preserveAspectRatio({
+        ratio: ratio
+      });
+    }
+    $parent = $elem.parent();
+    if ($elem.height() < $parent.height()) {
+      $elem.css({
+        width: 'auto',
+        height: '100%'
+      });
+      if (ratio) {
+        $elem.preserveAspectRatio({
+          ratio: ratio,
+          fixed: 'h'
+        });
+      }
+    }
+  });
+}
+
+jQuery.fn.preserveAspectRatio = function(options) {
+  options = jQuery.extend({
+    fixed: 'w',
+    ratio: null
+  }, options);
+  return this.each(function(n, elem) {
+    var width, height, ratio, parts;
+    ratio = options.ratio || jQuery(elem).attr('data-ratio');
     if (!ratio) {
       return false;
     }
-    var parts = ratio.split(':');
+    parts = ratio.split(':');
     if (parts.length != 2) {
       return false;
     }
     ratio = parseInt(parts[0]) / parseInt(parts[1]);
-    var width = jQuery(elem).width();
-    var height = width / ratio;
-    jQuery(elem).height(height);
+    if (options.fixed == 'h') {
+      height = jQuery(elem).height();
+      width = height * ratio;
+      jQuery(elem).width(width);
+    } else {
+      width = jQuery(elem).width();
+      height = width / ratio;
+      jQuery(elem).height(height);
+    }
   });
 }
 

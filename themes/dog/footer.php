@@ -3,6 +3,7 @@
 		<footer class="page-footer">
 			<div class="container"></div>
 		</footer>
+		<?= dog__include_template('_responsive-breakpoints') ?>
 		<?php wp_footer() ?>
 	</section>
 </body>
