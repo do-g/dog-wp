@@ -14,6 +14,11 @@ body {
 	padding: 0;
 }
 
+body.stuck {
+	overflow: hidden;
+	height: 100%;
+}
+
 /***** shared classes *****/
 
 .notransition {

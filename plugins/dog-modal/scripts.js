@@ -70,13 +70,13 @@
     function show() {
       $s.debug('Triggering dog_md.before_show');
       $(document).trigger('dog_md.before_show');
-      self.addClass(switch_class);
+      self.addClass('stuck ' + switch_class);
     }
 
     function hide() {
       $s.debug('Triggering dog_md.before_hide');
       $(document).trigger('dog_md.before_hide');
-      self.removeClass(switch_class);
+      self.removeClass('stuck ' + switch_class);
     }
 
     switch (action) {
@@ -110,6 +110,7 @@
     var gallery_class_cached = 'dog-md-gallery-cached';
     var gallery_class_list = 'gallery-list';
     var gallery_class_loop = 'loop';
+    var gallery_class_single = 'single';
     var gallery_class_left_end = 'left-end';
     var gallery_class_right_end = 'right-end';
     var gallery_attr_index = 'data-index';
@@ -325,6 +326,9 @@
       $gallery.addClass(gallery_class);
       $gallery.addClass(options.css_class);
       $gallery.addClass(info.uid);
+      if (!info.group) {
+        $gallery.addClass(gallery_class_single);
+      }
       if (options.loop) {
         $gallery.addClass(gallery_class_loop);
       }

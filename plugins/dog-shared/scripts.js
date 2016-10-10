@@ -485,6 +485,42 @@ jQuery.fn.preserveAspectRatio = function(options) {
   });
 }
 
+jQuery.fn.stick = function(options) {
+  options = jQuery.extend({
+    height: '100%',
+  }, options);
+  return this.each(function(n, elem) {
+    var $elem = jQuery(elem);
+    var overflow = $elem.css('overflow');
+    $elem.data('overflow', overflow);
+    $elem.css('overflow', 'hidden');
+    $elem.addClass('stuck');
+    if (options.height) {
+      $elem.css('height', options.height);
+    }
+  });
+}
+
+jQuery.fn.unstick = function() {
+  return this.each(function(n, elem) {
+    var $elem = jQuery(elem);
+    $elem.css('overflow', $elem.data('overflow'));
+    $elem.removeData('overflow');
+    $elem.removeClass('stuck');
+  });
+}
+
+jQuery.fn.toggleStuck = function(options) {
+  return this.each(function(n, elem) {
+    var $elem = jQuery(elem);
+    if ($elem.data('overflow')) {
+      $elem.unstick(options);
+    } else {
+      $elem.stick(options);
+    }
+  });
+}
+
 /***** native overrides *****/
 
 Object.defineProperty(Array.prototype, 'sum', {

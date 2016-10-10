@@ -20,3 +20,11 @@
   left: 0;
   top: 0;
 }
+
+@media (max-width: 991px) {
+
+	.dog-md-youtube-gallery li .ratio-container {
+		width: 100%;
+	}
+
+}

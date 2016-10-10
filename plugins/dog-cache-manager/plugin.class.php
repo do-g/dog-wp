@@ -5,7 +5,7 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 class Dog_Cache_Manager {
 
 	const PLUGIN_SLUG = 'dog-cache-manager';
-	const FRAGMENT_CACHE_KEY_PREFIX = 'dog-fc-';
+	const FRAGMENT_CACHE_KEY_PREFIX = 'dog-cm-';
 	const FRAGMENT_CACHE_KEY_MAX_LENGTH = 40;
 	const SALT_KEY = 'dog-cm-salt';
 	const SALT_LENGTH = 4;
@@ -38,7 +38,7 @@ class Dog_Cache_Manager {
 
 	private static function load_config() {
 		return apply_filters('dog__cm_options', array(
-			'fragment_cache_expiry' => 60,
+			'fragment_cache_expiry' => 60 * 60 * 24,
 		));
 	}
 
@@ -88,6 +88,11 @@ class Dog_Cache_Manager {
 		return delete_transient(self::fragment_key($key));
 	}
 
+	public static function clear_fragments() {
+		global $wpdb;
+		$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '%_" . self::FRAGMENT_CACHE_KEY_PREFIX . "%'");
+	}
+
 	/***** OPTIONS PAGE *****/
 
 	public static function add_menu() {
@@ -111,6 +116,7 @@ class Dog_Cache_Manager {
 			Dog_Form::validate_nonce('cm-options');
 			Dog_Form::validate_honeypot();
 			if (Dog_Form::form_is_valid()) {
+				self::clear_fragments();
 				$old_salt = self::get_salt();
 				$new_salt = self::update_salt();
 				if ($new_salt && $new_salt != $old_salt) {
