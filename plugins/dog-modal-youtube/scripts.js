@@ -67,6 +67,7 @@
       $iframe.attr('src', url + '&enablejsapi=1');
       $iframe.attr('frameborder', 0);
       $iframe.attr('id', 'youtube_player_' + index);
+      $iframe.attr('allowfullscreen', true);
     }
 
     return this.dog_md_gallery($.extend({

@@ -118,6 +118,10 @@ function dog__timestamp_url($url, $key_name = null) {
 	return $url . (strpos($url, '?') !== false ? '&' : '?') . ($key_name ? "{$key_name}={$timestamp}" : $timestamp);
 }
 
+function dog__home_url() {
+	return dog__lang_plugin_is_active() ? pll_home_url() : home_url();
+}
+
 /***** paths *****/
 
 function dog__theme_path($file) {

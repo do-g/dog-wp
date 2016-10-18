@@ -19,6 +19,7 @@
     var options = typeof action_or_options === 'object' ? action_or_options : {};
     var window_selector = '.dog-md-window';
     var switch_class = 'dog-md';
+    var frozen_class = 'frozen';
     $s.debug('$.dog_md() options', options);
     $s.debug('$.dog_md() action', action);
 
@@ -70,13 +71,13 @@
     function show() {
       $s.debug('Triggering dog_md.before_show');
       $(document).trigger('dog_md.before_show');
-      self.addClass('stuck ' + switch_class);
+      self.addClass([frozen_class, switch_class].join(' '));
     }
 
     function hide() {
       $s.debug('Triggering dog_md.before_hide');
       $(document).trigger('dog_md.before_hide');
-      self.removeClass('stuck ' + switch_class);
+      self.removeClass([frozen_class, switch_class].join(' '));
     }
 
     switch (action) {

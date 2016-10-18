@@ -14,7 +14,7 @@ body {
 	padding: 0;
 }
 
-body.stuck {
+body.frozen {
 	overflow: hidden;
 	height: 100%;
 }
@@ -140,6 +140,10 @@ img.full-width {
 
 .content-column.side {
 	flex: 0 0 230px;
+}
+
+body.no-sidebar .content-column.side {
+	display: none;
 }
 
 /***** preloader *****/

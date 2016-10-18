@@ -258,6 +258,8 @@ $s = new dog__shared_lib();
 
 /***** jQuery overrides *****/
 
+var dog__j_frozen_class = 'frozen';
+
 jQuery.fn.inViewport = function(options) {
   if (!this.size()) {
     return false;
@@ -485,38 +487,48 @@ jQuery.fn.preserveAspectRatio = function(options) {
   });
 }
 
-jQuery.fn.stick = function(options) {
+jQuery.fn.freeze = function(options) {
   options = jQuery.extend({
     height: '100%',
   }, options);
   return this.each(function(n, elem) {
     var $elem = jQuery(elem);
-    var overflow = $elem.css('overflow');
-    $elem.data('overflow', overflow);
+    var overflow = $elem.prop('style').overflow;
+    if (overflow) {
+      $elem.data('overflow', overflow);
+    }
     $elem.css('overflow', 'hidden');
-    $elem.addClass('stuck');
     if (options.height) {
+      var height = $elem.prop('style').height;
+      if (height) {
+        $elem.data('height', height);
+      }
       $elem.css('height', options.height);
     }
+    $elem.addClass(dog__j_frozen_class);
   });
 }
 
-jQuery.fn.unstick = function() {
+jQuery.fn.unfreeze = function() {
   return this.each(function(n, elem) {
     var $elem = jQuery(elem);
-    $elem.css('overflow', $elem.data('overflow'));
+    var overflow = $elem.data('overflow') || '';
+    $elem.css('overflow', overflow);
     $elem.removeData('overflow');
-    $elem.removeClass('stuck');
+    var height = $elem.data('height') || '';
+    $elem.css('height', height);
+    $elem.removeData('height');
+    $elem.removeClass(dog__j_frozen_class);
   });
 }
 
-jQuery.fn.toggleStuck = function(options) {
+jQuery.fn.toggleFrozen = function(options) {
   return this.each(function(n, elem) {
     var $elem = jQuery(elem);
-    if ($elem.data('overflow')) {
-      $elem.unstick(options);
+    if ($elem.hasClass(dog__j_frozen_class)) {
+      $elem.unfreeze(options);
     } else {
-      $elem.stick(options);
+      $elem.freeze(options);
     }
   });
 }

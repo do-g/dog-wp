@@ -29,6 +29,7 @@ $dog__schemaorg_page_types = apply_filters('dog__schemaorg_page_types', array(
 ));
 
 $dog__template_override = apply_filters('dog__template_override', array(
+	'page-acasa' => array('home'),
 	'page-contact' => array('contact-us'),
 ));
 
