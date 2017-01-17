@@ -2,23 +2,10 @@
 	require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 	$labels = get_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE);
 	delete_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE);
-	$messages = dog__get_admin_form_messages();
-	$errors = dog__get_admin_form_errors();
-	$translate_section_name = dog__txt('Traduceri');
-	$translate_section_link = '<a href="/wp-admin/options-general.php?page=mlang&tab=strings&group=theme">' . $translate_section_name . '</a>';
 ?>
 <div class="wrap dog-admin--page">
-	<h1>Opțiuni etichete</h1>
-	<?php if ($messages) {
-		foreach ($messages as $m) { ?>
-			<div class='updated'><p><strong><?= $m ?></strong></p></div>
-		<?php }
-	}
-	if ($errors) {
-		foreach ($errors as $e) { ?>
-			<div class='error'><p><strong><?= $e ?></strong></p></div>
-		<?php }
-	} ?>
+	<h1><?= dog__txt('Opțiuni etichete') ?></h1>
+	<?= dog__prepare_transient_flash_messages() ?>
 	<form name="form" method="post" action="admin-post.php" class="dog-admin--form dog-form-labels">
 	 	<p class="page-description"><?= dog__txt('Etichetele sunt acele fragmente text care apar pe sit dar nu fac parte din conținut.
 			Dacă este cazul acestea trebuie traduse în toate limbile sitului.

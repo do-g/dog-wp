@@ -1,20 +1,7 @@
-<?php
-	require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-	$messages = dog__get_admin_form_messages();
-	$errors = dog__get_admin_form_errors();
-?>
+<?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
 <div class="wrap dog-admin--page">
 	<h1><?= dog__txt('Opțiuni grupare și comprimare resurse statice') ?></h1>
-	<?php if ($messages) {
-		foreach ($messages as $m) { ?>
-			<div class='updated'><p><strong><?= $m ?></strong></p></div>
-		<?php }
-	}
-	if ($errors) {
-		foreach ($errors as $e) { ?>
-			<div class='error'><p><strong><?= $e ?></strong></p></div>
-		<?php }
-	} ?>
+	<?= dog__prepare_transient_flash_messages() ?>
 	<form name="form" method="post" action="admin-post.php" class="dog-admin--form dog-form-assets">
  		<p class="page-description"><?= dog__txt('Se recomandă ca resursele statice (de tipul .js și .css) să fie grupate împreună și comprimate.
 		Acest lucru ajută la optimizarea timpului de răspuns al paginilor care au de descărcat mai puține fișiere și de dimensiuni mai reduse.

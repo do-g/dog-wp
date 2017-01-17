@@ -2,20 +2,26 @@
 
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 
-class Dog_Shortcode_Youtube {
+class Dog_Shortcode_YouTube {
 
 	const PLUGIN_SLUG = 'dog-shortcode-youtube';
 	const TAG = 'dog-youtube';
-	const TYPE_PLAYLIST = 'playlist';
-	const TYPE_VIDEO = 'video';
+	const ATTR_OBJECT = 'object';
+	const ATTR_CHANNEL = 'channel';
+	const ATTR_PLAYLIST = 'playlist';
+	const ATTR_ID = 'id';
+	const ATTR_IGNORE = 'ignore';
+	const ATTR_MODE = 'mode';
+	const OBJECT_PLAYLIST = 'playlist';
+	const OBJECT_VIDEO = 'video';
+	const MODE_LIST = 'list';
+	const MODE_EMBED = 'embed';
+	const KEYWORD_WRAPPER = 'wrapper';
 	private static $_initialized = false;
 	private static $_config = array();
 	private static $_dependencies = array();
-	private static $_recording = false;
-	private static $_items = array();
-	private static $_playlists = array();
-	private static $_videos = array();
-	private static $_errors = array();
+
+	/***** INIT *****/
 
 	public static function init() {
 		if (self::$_initialized) {
@@ -34,22 +40,194 @@ class Dog_Shortcode_Youtube {
 		}
 	}
 
+	/***** LOGIC *****/
+
+	public static function parse($attrs, $content = null) {
+		switch ($attrs[self::ATTR_OBJECT]) {
+			case self::OBJECT_PLAYLIST:
+				return self::process_playlist($attrs, $content);
+			case self::OBJECT_VIDEO:
+				return self::process_video($attrs, $content);
+			default:
+				$public_message = dog__txt('Modulul a returnat o eroare. Conținutul nu poate fi încărcat.');
+				if (!isset($attrs[self::ATTR_OBJECT])) {
+					$debug_message = dog__txt('Lipsește parametrul "' . self::ATTR_OBJECT . '"');
+				} else {
+					$debug_message = dog__txt('Obiectul "' . $attrs[self::ATTR_OBJECT] . '" nu este recunoscut');
+				}
+				return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message)));
+		}
+	}
+
+	private static function process_playlist($attrs, $content) {
+		$object = self::OBJECT_PLAYLIST;
+		$mode = dog__value_or_default($attrs[self::ATTR_MODE], self::MODE_LIST);
+		$channel = trim(dog__get_shortcode_attr(self::ATTR_CHANNEL, $attrs, $content, true), ',');
+		$id = trim(dog__get_shortcode_attr(self::ATTR_ID, $attrs, $content, true), ',');
+		$ignore = $attrs[self::ATTR_IGNORE] ? dog__trim_explode(dog__get_shortcode_attr(self::ATTR_IGNORE, $attrs, $content, true)) : array();
+		$params = array(
+			'part' => 'snippet,player',
+		);
+		if (!$channel && !$id) {
+			$public_message = dog__txt('Modulul a returnat o eroare. Albumele nu pot fi încărcate.');
+			$debug_message = dog__txt('Pentru obiectul "' . $object . '" este necesar să se specifice unul din parametrii "' . self::ATTR_CHANNEL . '" sau "' . self::ATTR_ID . '"');
+			return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+		} else if ($id) {
+			$params['id'] = str_replace(' ', '', $id);
+		} else {
+			$params['channelId'] = str_replace(' ', '', $channel);
+			$params['maxResults'] = 50;
+		}
+		$service = new Dog_Api_YouTube_Playlists();
+		$response = $service->get($params);
+		if ($response) {
+			if ($response->items) {
+				$output = '';
+				$template = self::config('templates', $object, $mode);
+				if (!is_file($template) || !is_readable($template)) {
+					$public_message = dog__txt('Modulul a returnat o eroare. Albumele nu pot fi afișate.');
+					$debug_message = dog__txt('Fișierul template "' . $template . '" pentru obiectul "' . $object . '" în modul "' . $mode . '" nu există sau nu poate fi citit');
+					return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+				}
+				foreach ($response->items as $playlist) {
+					if (in_array($playlist->id, $ignore)) {
+						continue;
+					}
+					$playlist->thumbnail = self::best_image_size(self::config('thumb_width', $object), $playlist->snippet->thumbnails);
+					$output .= dog__get_file_output($template, array(
+						'type' => $object,
+						'mode' => $mode,
+						'item' => $playlist,
+						'attrs' => $attrs,
+						'config' => self::config(),
+					));
+				}
+				return self::wrap($output ? $output : Dog_Api_YouTube::empty_message(dog__txt('Nu am găsit albume video')), $object, $mode);
+			} else {
+				return self::wrap(Dog_Api_YouTube::empty_message(dog__txt('Nu am găsit albume video')), $object, $mode);
+			}
+		} else {
+			$error = $service->get_error();
+			$error = $error ? $error : dog__txt('Eroare necunoscută');
+			return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message(dog__txt('Serviciul a returnat o eroare. Albumele nu pot fi încărcate.'), $error)), $object, $mode);
+		}
+	}
+
+	private static function process_video($attrs, $content) {
+		$object = self::OBJECT_VIDEO;
+		$mode = dog__value_or_default($attrs[self::ATTR_MODE], self::MODE_EMBED);
+		$playlist = trim(dog__get_shortcode_attr(self::ATTR_PLAYLIST, $attrs, $content, true), ',');
+		$id = trim(dog__get_shortcode_attr(self::ATTR_ID, $attrs, $content, true), ',');
+		$ignore = $attrs[self::ATTR_IGNORE] ? dog__trim_explode(dog__get_shortcode_attr(self::ATTR_IGNORE, $attrs, $content, true)) : array();
+		$params = array(
+			'part' => 'snippet',
+		);
+		if (!$playlist && !$id) {
+			$public_message = dog__txt('Modulul a returnat o eroare. Clipurile video nu pot fi încărcate.');
+			$debug_message = dog__txt('Pentru obiectul "' . $object . '" este necesar să se specifice unul din parametrii "' . self::ATTR_PLAYLIST . '" sau "' . self::ATTR_ID . '"');
+			return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+		} else if ($id) {
+			$service = new Dog_Api_YouTube_Videos();
+			$params['id'] = str_replace(' ', '', $id);
+			$params['part'] .= ',player';
+		} else {
+			$service = new Dog_Api_Youtube_PlaylistItems();
+			$params['playlistId'] = str_replace(' ', '', $playlist);
+			$params['maxResults'] = 50;
+			$mode = self::MODE_LIST;
+		}
+		$response = $service->get($params);
+		if ($response) {
+			if ($response->items) {
+				$output = '';
+				$template = self::config('templates', $object, $mode);
+				if (!is_file($template) || !is_readable($template)) {
+					$public_message = dog__txt('Modulul a returnat o eroare. Clipurile video nu pot fi afișate.');
+					$debug_message = dog__txt('Fișierul template "' . $template . '" pentru obiectul "' . $object . '" în modul "' . $mode . '" nu există sau nu poate fi citit');
+					return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+				}
+				foreach ($response->items as $video) {
+					$video_id = $video->snippet->resourceId->videoId ? $video->snippet->resourceId->videoId : $video->id;
+					if (in_array($video_id, $ignore)) {
+						continue;
+					}
+					$video->thumbnail = self::best_image_size(self::config('thumb_width', $object), $video->snippet->thumbnails);
+					$output .= dog__get_file_output($template, array(
+						'type' => $object,
+						'mode' => $mode,
+						'item' => $video,
+						'attrs' => $attrs,
+						'config' => self::config(),
+					));
+				}
+				return self::wrap($output ? $output : Dog_Api_YouTube::empty_message(dog__txt('Nu am găsit clipuri video')), $object, $mode);
+			} else {
+				return self::wrap(Dog_Api_YouTube::empty_message(dog__txt('Nu am găsit clipuri video')), $object, $mode);
+			}
+		} else {
+			$error = $service->get_error();
+			$error = $error ? $error : dog__txt('Eroare necunoscută');
+			return self::wrap(Dog_Api_YouTube::error_message(dog__debug_message(dog__txt('Serviciul a returnat o eroare. Clipurile video nu pot fi încărcate.'), $error)), $object, $mode);
+		}
+	}
+
+	private static function wrap($content, $type = null, $mode = null) {
+		$template = self::config('templates', self::KEYWORD_WRAPPER);
+		if (!is_file($template) || !is_readable($template)) {
+			$public_message = dog__txt('Modulul a returnat o eroare. Resursele nu pot fi afișate.');
+			$debug_message = dog__txt('Fișierul template "' . $template . '" nu există sau nu poate fi citit');
+			return Dog_Api_YouTube::error_message(dog__debug_message($public_message, $debug_message));
+		}
+		return dog__get_file_output($template, array(
+			'content' => $content,
+			'type' => self::KEYWORD_WRAPPER,
+			'obj_type' => $type,
+			'mode' => $mode,
+			'attrs' => $attrs,
+			'config' => self::config(),
+		));
+	}
+
+	private static function best_image_size($target_size, $size_list) {
+		$sizes = array();
+		foreach ($size_list as $key => $item) {
+			$sizes[$key] = $item->width;
+		}
+		$key = dog__closest($target_size, $sizes, true);
+		return $size_list->$key->url;
+	}
+
+	public static function get_code($params) {
+		return dog__get_shortcode_text(self::TAG, $params);
+	}
+
+	/***** CONFIG *****/
+
 	private static function load_config() {
 		return apply_filters('dog__sy_options', array(
 			'templates' => array(
-				'playlist' => dog__sibling_path('youtube-playlist.tpl.php', __FILE__),
-				'video' => dog__sibling_path('youtube-video.tpl.php', __FILE__),
-				'playlist_video' => dog__sibling_path('youtube-playlist-video.tpl.php', __FILE__),
+				self::OBJECT_PLAYLIST => array(
+					self::MODE_LIST => dog__sibling_path('youtube-playlist-list.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('youtube-playlist-embed.tpl.php', __FILE__),
+				),
+				self::OBJECT_VIDEO => array(
+					self::MODE_LIST => dog__sibling_path('youtube-video-list.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('youtube-video-embed.tpl.php', __FILE__),
+				),
+				self::KEYWORD_WRAPPER => dog__sibling_path('youtube-wrapper.tpl.php', __FILE__),
 			),
 			'css_class' => array(
-				'playlist' => null,
-				'video' => null,
-				'playlist_video' => null,
+				self::OBJECT_PLAYLIST => null,
+				self::OBJECT_VIDEO => null,
+				self::KEYWORD_WRAPPER => null,
 			),
 			'url' => array(
-				'playlist' => Dog_Api_YouTube::get_playlist_url('${id}'),
-				'video' => Dog_Api_YouTube::get_video_url('${id}'),
-				'playlist_video' => Dog_Api_YouTube::get_video_url('${vid}', '${pid}'),
+				self::OBJECT_PLAYLIST => Dog_Api_YouTube::get_playlist_url('${id}'),
+				self::OBJECT_VIDEO => Dog_Api_YouTube::get_video_url('${id}', '${pid}'),
+			),
+			'thumb_width' => array(
+				self::OBJECT_PLAYLIST => 600,
+				self::OBJECT_VIDEO => 600,
 			),
 			'gallery_rel' => 'dog-md-youtube-gallery',
 		));
@@ -66,127 +244,6 @@ class Dog_Shortcode_Youtube {
 			$config = $config[$arg];
 		}
 		return $config;
-	}
-
-	public static function parse($attrs) {
-		$id = $attrs['id'];
-		if (!$id) {
-			return;
-		}
-		self::$_items[$id] = $attrs;
-		switch ($attrs['type']) {
-			case self::TYPE_PLAYLIST:
-				self::$_playlists[$id] = $attrs;
-				if (!self::$_recording) {
-					return self::load_playlist($attrs);
-				}
-				break;
-			default:
-				self::$_videos[$id] = $attrs;
-				if (!self::$_recording) {
-					return self::load_video($attrs);
-				}
-				break;
-		}
-	}
-
-	private static function load_playlist($attrs) {
-		$service = new Dog_Api_YouTube_Playlists();
-		$response = $service->get($attrs['id'], array(
-			'part' => 'snippet',
-		));
-		if ($response) {
-			if ($response->items) {
-				foreach ($response->items as $item) {
-					return dog__get_file_output(self::config('templates', 'playlist'), array(
-						'item' => $item,
-						'attrs' => $attrs,
-						'config' => self::config(),
-					));
-				}
-			} else {
-				return dog__txt('Serviciul nu a returnat nicio lista');
-			}
-		} else {
-			return dog__debug_message(dog__txt('Serviciul a returnat o eroare. Clipul nu poate fi încărcat'), $service->get_error());
-		}
-	}
-
-	private static function load_video($attrs) {
-		$service = new Dog_Api_YouTube_Videos();
-		$response = $service->get($attrs['id'], array(
-			'part' => 'snippet',
-		));
-		if ($response) {
-			if ($response->items) {
-				foreach ($response->items as $item) {
-					return dog__get_file_output(self::config('templates', 'video'), array(
-						'item' => $item,
-						'attrs' => $attrs,
-						'config' => self::config(),
-					));
-				}
-			} else {
-				return dog__txt('Serviciul nu a returnat niciun video');
-			}
-		} else {
-			return dog__debug_message(dog__txt('Serviciul a returnat o eroare. Lista nu poate fi încărcată'), $service->get_error());
-		}
-	}
-
-	public static function load() {
-		$html_items = array();
-		$playlist_ids = array_keys(self::$_playlists);
-		$service = new Dog_Api_YouTube_Playlists();
-		$response = $service->get(implode(',', $playlist_ids), array(
-			'part' => 'snippet',
-		));
-		if ($response) {
-			if ($response->items) {
-				foreach ($response->items as $item) {
-					$html_items[$item->id] = dog__get_file_output(self::config('templates', 'playlist'), array(
-						'item' => $item,
-						'attrs' => self::$_playlists[$item->id],
-						'config' => self::config(),
-					));
-				}
-			} else {
-				array_push(self::$_errors, dog__txt('Serviciul nu a returnat nicio lista'));
-			}
-		} else {
-			array_push(self::$_errors, dog__debug_message(dog__txt('Serviciul a returnat o eroare. Listele nu pot fi încărcate'), $service->get_error()));
-		}
-		$video_ids = array_keys(self::$_videos);
-		$service = new Dog_Api_YouTube_Videos();
-		$response = $service->get(implode(',', $video_ids), array(
-			'part' => 'snippet',
-		));
-		if ($response) {
-			if ($response->items) {
-				foreach ($response->items as $item) {
-					$html_items[$item->id] = dog__get_file_output(self::config('templates', 'video'), array(
-						'item' => $item,
-						'attrs' => self::$_videos[$item->id],
-						'config' => self::config(),
-					));
-				}
-			} else {
-				array_push(self::$_errors, dog__txt('Serviciul nu a returnat niciun video'));
-			}
-		} else {
-			array_push(self::$_errors, dog__debug_message(dog__txt('Serviciul a returnat o eroare. Clipurile nu pot fi încărcate'), $service->get_error()));
-		}
-		$sorted_html_items = array();
-		foreach (self::$_items as $id => $attrs) {
-			array_push($sorted_html_items, $html_items[$id]);
-		}
-		self::$_recording = false;
-		return implode('', $sorted_html_items);
-	}
-
-	public static function record() {
-		self::$_items = self::$_playlists = self::$_videos = self::$_errors = array();
-		self::$_recording = true;
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

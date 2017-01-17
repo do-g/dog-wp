@@ -2,7 +2,8 @@
 require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 ?><article class="entry detail archive category main">
 	<h1 class="entry-title page-title"><?php single_cat_title() ?></h1>
-	<div class="entry-body"><?php
-		dog__loop_content('_content-post-teaser');
-	?></div>
+	<div class="entry-body">
+		<div class="entry-description"><?php category_description() ?></div>
+		<?php dog__loop_content('_content-post-teaser') ?>
+	</div>
 </article>

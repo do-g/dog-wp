@@ -2,21 +2,10 @@
 	require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 	$issues = get_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE);
 	delete_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE);
-	$messages = dog__get_admin_form_messages();
-	$errors = dog__get_admin_form_errors();
 ?>
 <div class="wrap dog-admin--page">
-	<h1>Opțiuni securitate</h1>
-	<?php if ($messages) {
-		foreach ($messages as $m) { ?>
-			<div class='updated'><p><strong><?= $m ?></strong></p></div>
-		<?php }
-	}
-	if ($errors) {
-		foreach ($errors as $e) { ?>
-			<div class='error'><p><strong><?= $e ?></strong></p></div>
-		<?php }
-	} ?>
+	<h1><?= dog__txt('Opțiuni securitate') ?></h1>
+	<?= dog__prepare_transient_flash_messages() ?>
 	<form name="form" method="post" action="admin-post.php" class="dog-admin--form dog-form-labels">
 	 	<p class="page-description"><?= dog__txt('Verifică aici dacă fișierele temelor și modulelor sunt securizate împotriva accesului direct din afara aplicației.
 		Fișierele cu extensia .php trebuie să întoarcă un răspuns securizat cererilor externe.

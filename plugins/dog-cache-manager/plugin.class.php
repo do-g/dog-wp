@@ -120,9 +120,9 @@ class Dog_Cache_Manager {
 				$old_salt = self::get_salt();
 				$new_salt = self::update_salt();
 				if ($new_salt && $new_salt != $old_salt) {
-					dog__set_admin_form_message(dog__txt('Memoria cache a fost golită'));
+					dog__set_transient_flash_message(dog__txt('Memoria cache a fost golită'));
 				} else {
-					dog__set_admin_form_error(dog__txt('Sistemul a întâmpinat o eroare. Memoria nu poate fi golită'));
+					dog__set_transient_flash_error(dog__txt('Sistemul a întâmpinat o eroare. Memoria nu poate fi golită'));
 				}
 			} else {
 				$error_message = dog__txt('Sistemul a întâmpinat erori la procesarea formularului:');
@@ -134,7 +134,7 @@ class Dog_Cache_Manager {
 						}
 					}
 				}
-				dog__set_admin_form_error($error_message);
+				dog__set_transient_flash_error($error_message);
 			}
 		}
    		wp_redirect(admin_url('admin.php?page=' . self::PLUGIN_SLUG));

@@ -26,12 +26,14 @@ class Dog_Updater {
 			#add_filter('pre_set_site_transient_update_themes', array(__CLASS__, 'check_for_updates'));
 			#add_action('delete_site_transient_update_plugins', array(__CLASS__, 'clear_plugin_updates'));
 			#add_action('delete_site_transient_update_themes', array(__CLASS__, 'clear_theme_updates'));
-			add_filter('site_transient_update_plugins', array(__CLASS__, 'register_plugin_updates'));
-			add_filter('site_transient_update_themes', array(__CLASS__, 'register_theme_updates'));
 			add_action('upgrader_process_complete', array(__CLASS__, 'update_complete'), 10, 2);
 			add_action('admin_post_dog_save_up_options', array(__CLASS__, 'save_options'));
 			add_action('admin_menu', array(__CLASS__, 'add_menu'));
+			add_filter('site_transient_update_plugins', array(__CLASS__, 'register_plugin_updates'));
+			add_filter('site_transient_update_themes', array(__CLASS__, 'register_theme_updates'));
 			add_filter('plugin_action_links_' . dog__get_plugin_name_from_path(__FILE__, true), array(__CLASS__, 'options_link'));
+			add_filter('update_bulk_plugins_complete_actions', array(__CLASS__, 'back_to_updates_link'), 10, 2);
+			add_filter('update_bulk_theme_complete_actions', array(__CLASS__, 'back_to_updates_link'), 10, 2);
 		} else {
 			add_action('admin_init', array(__CLASS__, 'depends'));
 		}
@@ -93,7 +95,7 @@ class Dog_Updater {
 		if (!is_array($info)) {
 			return new WP_Error(1, dog__txt('Sistemul a întâmpinat o eroare. Comunicarea cu serverului de actualizări a eșuat pentru obiectul "${name}"', array('name' => $name)));
 		}
-		$info = json_decode($info['body']);
+		$info = json_decode(wp_remote_retrieve_body($info));
 		if (json_last_error() != JSON_ERROR_NONE) {
 			return new WP_Error(2, dog__txt('Sistemul a întâmpinat o eroare. Răspunsul serverului de actualizări nu poate fi procesat pentru obiectul "${name}"', array('name' => $name)));
 		}
@@ -199,21 +201,21 @@ class Dog_Updater {
 				$updates = self::check_for_updates();
 				$has = false;
 				if ($updates['plugins']) {
-					dog__set_admin_form_message(dog__txt('Sunt disponibile versiuni mai noi pentru următoarele module: ${list}', array('list' => implode(', ', $updates['plugins']))));
+					dog__set_transient_flash_message(dog__txt('Sunt disponibile versiuni mai noi pentru următoarele module: ${list}', array('list' => implode(', ', $updates['plugins']))));
 					$has = true;
 				}
 				if ($updates['themes']) {
-					dog__set_admin_form_message(dog__txt('Sunt disponibile versiuni mai noi pentru următoarele teme: ${list}', array('list' => implode(', ', $updates['themes']))));
+					dog__set_transient_flash_message(dog__txt('Sunt disponibile versiuni mai noi pentru următoarele teme: ${list}', array('list' => implode(', ', $updates['themes']))));
 					$has = true;
 				}
 				if ($has) {
-					dog__set_admin_form_message('<a href="update-core.php">' . dog__txt('Apasă aici pentru a vedea lista exactă') . '</a>');
+					dog__set_transient_flash_message('<a href="update-core.php">' . dog__txt('Apasă aici pentru actualizare') . '</a>');
 				} else {
-					dog__set_admin_form_message(dog__txt('Toate modulele și temele sunt actualizate la zi'));
+					dog__set_transient_flash_message(dog__txt('Toate modulele și temele sunt actualizate la zi'));
 				}
 				if ($updates['errors']) {
 					foreach ($updates['errors'] as $e) {
-						dog__set_admin_form_error($e);
+						dog__set_transient_flash_error($e);
 					}
 				}
 			} else {
@@ -226,7 +228,7 @@ class Dog_Updater {
 						}
 					}
 				}
-				dog__set_admin_form_error($error_message);
+				dog__set_transient_flash_error($error_message);
 			}
 		}
    		wp_redirect(admin_url('admin.php?page=' . self::PLUGIN_SLUG));
@@ -238,6 +240,12 @@ class Dog_Updater {
 		$settings_link = '<a href="' . $url . '">' . dog__txt('Setări') . '</a>';
 		array_unshift($links, $settings_link);
 		return $links;
+	}
+
+	public static function back_to_updates_link($update_actions, $info) {
+		return array_merge($update_actions, array(
+			'dog_updates' => '<a href="' . admin_url('admin.php?page=' . self::PLUGIN_SLUG) . '" target="_parent">' . dog__txt('Return to DOG Updater') . '</a>',
+		));
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

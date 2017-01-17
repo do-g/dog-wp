@@ -33,6 +33,7 @@ class Dog_Modal_Youtube {
 			'loop' => true,
 			'auto_advance_delay' => 0,
 			'rel_fragment' => self::REL_FRAGMENT,
+			'debug' => false,
 		));
 	}
 
@@ -50,7 +51,6 @@ class Dog_Modal_Youtube {
 	}
 
 	public static function enqueue_assets() {
-		wp_enqueue_style('dog_my_styles', dog__plugin_url('styles.css', self::PLUGIN_SLUG), array('dog_md_styles'));
 		wp_enqueue_script('dog_my_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('dog_md_scripts'), null, true);
 		$js_vars = apply_filters('dog__my_options', self::config());
 		wp_localize_script('dog_my_scripts', 'dog__my', $js_vars);

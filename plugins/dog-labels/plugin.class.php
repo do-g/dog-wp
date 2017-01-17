@@ -6,6 +6,7 @@ class Dog_Labels {
 
 	const PLUGIN_SLUG = 'dog-labels';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public static function init() {
@@ -52,11 +53,11 @@ class Dog_Labels {
 			if (Dog_Form::form_is_valid()) {
 				$result = self::generate_labels();
 				if (is_wp_error($result)) {
-					dog__set_admin_form_error($result->get_error_message());
+					dog__set_transient_flash_error($result->get_error_message());
 				} else {
-					set_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE, $result, DOG_ADMIN__TRANSIENT_EXPIRE_FORM_MESSAGE);
-					dog__set_admin_form_message(dog__txt('Verificarea s-a finalizat cu succes. Am găsit ${n} etichete', array('n' => count($result))));
-					dog__set_admin_form_message('<a href="' . admin_url('options-general.php?page=mlang&tab=strings&group=dogx') . '">' . dog__txt('Apasă aici pentru traducere') . '</a>');
+					set_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE, $result, DOG__TRANSIENT_FLASH_EXPIRE);
+					dog__set_transient_flash_message(dog__txt('Verificarea s-a finalizat cu succes. Am găsit ${n} etichete', array('n' => count($result))));
+					dog__set_transient_flash_message('<a href="' . admin_url('options-general.php?page=mlang&tab=strings&group=dogx') . '">' . dog__txt('Apasă aici pentru traducere') . '</a>');
 				}
 			} else {
 				$error_message = dog__txt('Sistemul a întâmpinat erori la procesarea formularului:');
@@ -68,7 +69,7 @@ class Dog_Labels {
 						}
 					}
 				}
-				dog__set_admin_form_error($error_message);
+				dog__set_transient_flash_error($error_message);
 			}
 		}
    		wp_redirect(admin_url('admin.php?page=' . self::PLUGIN_SLUG));
@@ -90,6 +91,7 @@ class Dog_Labels {
 			file_put_contents($dest, implode('', $output));
 		}
 		$plugins = dog__get_dog_plugin_names();
+		$plugins = array_merge($plugins, self::config('include_plugins'));
 		if ($plugins) {
 			foreach ($plugins as $plugin) {
 				$output = array("<?php\n");
@@ -110,12 +112,13 @@ class Dog_Labels {
 			return $content;
 		}
 		$ignore_files = array('_pll_labels.php');
+		$allow_duplicates = array('functions.php');
 		$pattern = "{$path}/*.php";
 		$files = glob($pattern, GLOB_NOSORT);
 		if ($files) {
 			foreach ($files as $file) {
 				$file_name = basename($file);
-				if (in_array($file_name, $ignore_files) || in_array($file_name, $all_translated_files)) {
+				if (in_array($file_name, $ignore_files) || (in_array($file_name, $all_translated_files) && !in_array($file_name, $allow_duplicates))) {
 					continue;
 				}
 				array_push($all_translated_files, $file_name);
@@ -139,6 +142,27 @@ class Dog_Labels {
 		$settings_link = '<a href="' . $url . '">' . dog__txt('Setări') . '</a>';
 		array_unshift($links, $settings_link);
 		return $links;
+	}
+
+	/***** CONFIG *****/
+
+	private static function load_config() {
+		return apply_filters('dog__lb_options', array(
+			'include_plugins' => array(),
+		));
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

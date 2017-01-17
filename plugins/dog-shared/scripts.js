@@ -28,7 +28,7 @@ function dog__shared_lib() {
   }
 
   this.is_screen = function (breakpoint) {
-  	return jQuery('.device-' + breakpoint).is(':visible')
+  	return jQuery('.device-' + breakpoint).is(':visible');
   }
 
   this.is_page = function (selector) {
@@ -76,6 +76,32 @@ function dog__shared_lib() {
     return this.defined_and_not_null(obj) && obj !== '';
   }
 
+  this.closest_value = function (search, list, return_key, prefer_lower) {
+    var closest_value, closest_value_key, key, value, diff_closest, diff_current;
+    closest_value = null;
+    closest_value_key = null;
+    for (key in list) {
+      value = list[key];
+      diff_closest = Math.abs(search - closest_value);
+      diff_current = Math.abs(search - value);
+      if (
+          closest_value === null ||
+          diff_closest > diff_current ||
+          (
+            diff_closest == diff_current &&
+            (
+              (prefer_lower && value < closest_value) ||
+              (!prefer_lower && value > closest_value)
+            )
+          )
+        ) {
+        closest_value = value;
+        closest_value_key = key;
+      }
+    }
+    return return_key ? closest_value_key : closest_value;
+  }
+
   this.transitionend = function () {
     if (which_transitionend) {
       return which_transitionend;
@@ -113,6 +139,41 @@ function dog__shared_lib() {
     }
   }
 
+  this.debugger = function (enabled) {
+    return {
+      log: function (message) {
+        if (enabled) {
+          console.log.apply(console, arguments);
+        }
+        return this;
+      },
+      group: function (message) {
+        if (enabled) {
+          console.groupCollapsed.apply(console, arguments);
+        }
+        return this;
+      },
+      groupEnd: function () {
+        if (enabled) {
+          console.groupEnd();
+        }
+        return this;
+      },
+      time: function (name) {
+        if (enabled) {
+          console.time(name);
+        }
+        return this;
+      },
+      timeEnd: function (name) {
+        if (enabled) {
+          console.timeEnd(name);
+        }
+        return this;
+      }
+    }
+  }
+
   /**
    * return true if event did not originate on the element it was attached to
    * but rather bubbled up from descendants of that element
@@ -129,7 +190,7 @@ function dog__shared_lib() {
 
   this.get_nonce = function (key) {
     var nonce_key = this.string_to_key(key, dog__sh.nc_var_prefix);
-    return dog__sh[nonce_key];
+    return dog__non[nonce_key];
   }
 
   this.prepare_ajax_data = function (data) {
@@ -153,17 +214,17 @@ function dog__shared_lib() {
       beforeSend: function(jqXHR, settings) {
         self.debug('AJAX Request: ', settings);
         if (callbacks.before) {
-          return callbacks.before(settings);
+          return callbacks.before(jqXHR, settings);
         }
       }
     };
     jQuery.extend(ajax_options, options);
     jQuery.ajax(ajax_options).done(function(response, textStatus, jqXHR) {
       self.debug('AJAX Response', response);
-      self.process_ajax_response(response, ajax_options, callbacks);
+      self.process_ajax_response(response, textStatus, jqXHR, ajax_options, callbacks);
     }).fail(function(jqXHR, textStatus, errorThrown) {
       if (callbacks.fail) {
-        return callbacks.fail(textStatus, errorThrown);
+        return callbacks.fail(jqXHR, textStatus, errorThrown);
       }
     }).always(function(data_jqXHR, textStatus, jqXHR_errorThrown) {
       if (callbacks.always) {
@@ -181,7 +242,7 @@ function dog__shared_lib() {
     return response.status == dog__sh.ajax_response_status_error;
   }
 
-  this.process_ajax_response = function(response, options, callbacks) {
+  this.process_ajax_response = function(response, textStatus, jqXHR, options, callbacks) {
     var is_error = false;
     if (!this.validate_response_nonce(response, options.data[this.get_nonce_name()])) {
       response.message = response.message ? response.message : dog__sh.labels.alert_response_error_nonce;
@@ -190,7 +251,7 @@ function dog__shared_lib() {
       is_error = this.is_response_error(response);
     }
     if (callbacks.done) {
-      callbacks.done(response, is_error);
+      callbacks.done(response, is_error, textStatus, jqXHR);
     }
   }
 
@@ -203,8 +264,8 @@ function dog__shared_lib() {
   }
 
   this.ajax_submit = function (obj, data, options, callbacks) {
-    var form = jQuery(obj).is('form') ? obj : jQuery(obj).parents('form').first();
-    var form_data = this.form_to_object(form);
+    var $form = jQuery(obj).closest('form');
+    var form_data = this.form_to_object($form);
     data = jQuery.extend(form_data, data);
     this.ajax_request(data, options, callbacks);
   }
@@ -221,6 +282,14 @@ function dog__shared_lib() {
       }
     }
     return false;
+  }
+
+  this.is_http_client_error = function (status_code) {
+    return status_code >= 400 && status_code < 500;
+  }
+
+  this.is_http_server_error = function (status_code) {
+    return status_code >= 500;
   }
 
   /***** notices *****/
@@ -420,9 +489,8 @@ jQuery.fn.removeClassWithPrefix = function(prefix) {
   });
 }
 
-jQuery.fn.cover = function() {
+jQuery.fn.cover = function(options) {
   options = jQuery.extend({
-    fixed: 'w',
     ratio: null
   }, options);
   return this.each(function(n, elem) {

@@ -5,6 +5,7 @@
 		</footer>
 		<?= dog__include_template('_responsive-breakpoints') ?>
 		<?php wp_footer() ?>
+		<?= dog__include_template('_analytics') ?>
 	</section>
 </body>
 </html>

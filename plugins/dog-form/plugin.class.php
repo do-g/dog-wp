@@ -17,13 +17,15 @@ class Dog_Form {
 	const ERROR_TYPE_EMAIL = 'email';
 	const ERROR_TYPE_REGEX = 'regex';
 	const SHORTCODE_TAG = 'dog-form';
+	const POST_KEY_HANDLER = '_dog_handler';
 	const REGEX_VALID_NAME = "/^[\\p{L}\\s-']+$/iu";
+	const REGEX_VALID_INSTITUTION_NAME = "/^[\\p{L}\\s-\.']+$/iu";
 	const REGEX_VALID_ZIP = "/^[\\p{L}\\p{N}-]+$/i";
 	const REGEX_VALID_PHONE = "/^[0-9-\+\.\(\)\\s]+$/";
 	const REGEX_VALID_ADDRESS = "/^[\\p{L}\\p{N}\\s-'\.,]+$/iu";
 	const FIELD_MAXLENGTH_NAME = 30;
 	const FIELD_MAXLENGTH_FULL_NAME = 50;
-	const FIELD_MAXLENGTH_COMPANY_NAME = 50;
+	const FIELD_MAXLENGTH_INSTITUTION_NAME = 50;
 	const FIELD_MAXLENGTH_ADDRESS = 100;
 	const FIELD_MAXLENGTH_TOWN = 50;
 	const FIELD_MAXLENGTH_ZIP = 10;
@@ -127,6 +129,10 @@ class Dog_Form {
 		return self::$_post_data;
 	}
 
+	public static function reset_post_data() {
+		self::$_post_data = array();
+	}
+
 	public static function validate_nonce($nonce_action, $redirect_to = null) {
 		$nonce = self::get_post_value(DOG__NC_NAME);
 		if (!$nonce || !wp_verify_nonce($nonce, dog__string_to_key($nonce_action))) {
@@ -221,8 +227,8 @@ class Dog_Form {
 		return self::get_field_errors('form', $type);
 	}
 
-	public static function render_form_errors() {
-		include dog__plugin_path('templates/form-errors.php', self::PLUGIN_SLUG);
+	public static function render_form_messages() {
+		include dog__plugin_path('templates/form-messages.php', self::PLUGIN_SLUG);
 	}
 
 	public static function get_all_errors() {
@@ -243,12 +249,12 @@ class Dog_Form {
 		}
 	}
 
-	public static function render_action_field($action) {
+	public static function render_handler_field($action) {
 		self::render_form_field(array(
 			'field' => array(
 				'tag' => 'input',
 				'type' => 'hidden',
-				'name' => 'action',
+				'name' => self::POST_KEY_HANDLER,
 				'value' => $action,
 			),
 		));

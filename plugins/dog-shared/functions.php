@@ -79,7 +79,7 @@ function dog__base_css_url($file, $display = true) {
 }
 
 function dog__email_url_fragment($file) {
-	return dog__url_fragment('email/' . ltrim($file, '/') . '.tpl');
+	return dog__url_fragment('email/' . ltrim($file, '/') . '.txt');
 }
 
 function dog__compressed_asset_url_fragment($asset_name) {
@@ -120,6 +120,15 @@ function dog__timestamp_url($url, $key_name = null) {
 
 function dog__home_url() {
 	return dog__lang_plugin_is_active() ? pll_home_url() : home_url();
+}
+
+function dog__http_build_query($params, $base_url = null) {
+	$base = '';
+	if ($base_url) {
+		$separator = strpos($base_url, '?') ? '&' : '?';
+		$base = $base_url . $separator;
+	}
+	return $base . urldecode(http_build_query($params));
 }
 
 /***** paths *****/
@@ -164,7 +173,7 @@ function dog__get_dog_plugin_names($full = false) {
 }
 
 function dog__get_dog_theme_names() {
-	return array_map('trim', explode(',', DOG__THEMES));
+	return dog__trim_explode(DOG__THEMES);
 }
 
 function dog__get_plugin_name_from_path($plugin_file_path, $full = false) {
@@ -300,17 +309,20 @@ function dog__get_selected_attr_value($condition) {
 	return dog__get_special_attr_value('selected', $condition);
 }
 
-function dog__attributes_array_to_html($list) {
+function dog__attributes_array_to_html($list, $boolean = array()) {
 	$html = array();
 	if ($list) {
-		$special = array('checked', 'selected');
+		$boolean = array_merge(array('checked', 'selected', 'required', 'readonly', 'disabled'), $boolean);
 		foreach ($list as $key => $value) {
-			if (in_array($key, $special) && !$value) {
-				continue;
-			}
 			$key = sanitize_key($key);
 			$value = esc_attr($value);
-			array_push($html, "{$key}=\"{$value}\"");
+			if (in_array($key, $boolean)) {
+				if ($value) {
+					array_push($html, $key);
+				}
+			} else {
+				array_push($html, "{$key}=\"{$value}\"");
+			}
 		}
 	}
 	return implode(" ", $html);
@@ -348,13 +360,14 @@ function dog__ajax_response_error($info = array(), $data = null) {
 
 /***** email *****/
 
-function dog__get_email_template($path, $lang = null) {
-	$path = $lang ? str_replace('.tpl', "--{$lang}.tpl", $path) : $path;
-	return file_get_contents($path);
+function dog__get_text_template($file_path, $template_vars = array()) {
+	return is_file($file_path) && is_readable($file_path) ? dog__replace_template_vars(file_get_contents($file_path), $template_vars) : false;
 }
 
-function dog__get_theme_email_template($name, $lang = null) {
-	return dog__get_email_template(get_stylesheet_directory_uri() . dog__email_url_fragment($name), $lang);
+function dog__get_theme_email_template($name, $template_vars = array(), $lang = null) {
+	$name .= $lang ? "-{$lang}" : '';
+	$path = dog__theme_email_path($name);
+	return dog__get_text_template($path, $template_vars);
 }
 
 function dog__get_mail_errors() {
@@ -368,16 +381,16 @@ function dog__get_mail_errors() {
 	return $ts_mail_errors;
 }
 
-function dog__send_mail($recipients, $subject, $headers, $template_path, $template_vars = array(), $template_lang = null, $attachments = array()) {
+function dog__send_mail($recipients, $subject, $message, $headers, $attachments = array()) {
+	$content_type = $headers['content_type'] ? $headers['content_type'] : 'text/html';
+	$charset = $headers['charset'] ? $headers['charset'] : 'UTF-8';
 	$full_headers = array(
-		'Content-Type: text/html; charset=UTF-8',
+		'Content-Type: ' . $content_type . '; charset=' . $charset,
 		'Sender: ' . $headers['sender'],
 		'From: ' . $headers['from']['name'] . ' <' . $headers['from']['email'] . '>',
 		'Reply-To: ' . $headers['reply']['name'] . ' <' . $headers['reply']['email'] . '>',
 	);
-	$template = dog__get_email_template($template_path, $template_lang);
-	$template = dog__replace_template_vars($template, $template_vars);
-	if (!wp_mail($recipients, $subject, $template, $full_headers, $attachments)) {
+	if (!wp_mail($recipients, $subject, $message, $full_headers, $attachments)) {
 		return dog__get_mail_errors();
 	}
 	return true;
@@ -416,30 +429,165 @@ function dog__get_flash_error($key) {
 	return dog__get_flash_message(DOG__SESSION_KEY_ERROR, $key);
 }
 
-function dog__set_admin_form_message($message, $key = null) {
-	$key = $key ? $key : DOG_ADMIN__TRANSIENT_FORM_MESSAGE;
-	$messages = get_transient($key);
-	$messages = $messages ? $messages : array();
-	array_push($messages, $message);
-	set_transient($key, $messages, DOG_ADMIN__TRANSIENT_EXPIRE_FORM_MESSAGE);
+function dog__set_transient_flash_message($message, $type = null) {
+	$key = DOG__TRANSIENT_FLASH_MESSAGES;
+	$type = $type ? $type : DOG__TRANSIENT_FLASH_KEY_SUCCESS;
+	$entries = get_transient($key);
+	$entries = $entries ? $entries : array();
+	$entries[$type] = $entries[$type] ? $entries[$type] : array();
+	array_push($entries[$type], $message);
+	set_transient($key, $entries, DOG__TRANSIENT_FLASH_EXPIRE);
 }
 
-function dog__set_admin_form_error($message) {
-	return dog__set_admin_form_message($message, DOG_ADMIN__TRANSIENT_FORM_ERROR);
+function dog__set_transient_flash_error($message) {
+	return dog__set_transient_flash_message($message, DOG__TRANSIENT_FLASH_KEY_ERROR);
 }
 
-function dog__get_admin_form_messages($key = null) {
-	$key = $key ? $key : DOG_ADMIN__TRANSIENT_FORM_MESSAGE;
-	$messages = get_transient($key);
-	delete_transient($key);
+function dog__set_transient_flash_warning($message) {
+	return dog__set_transient_flash_message($message, DOG__TRANSIENT_FLASH_KEY_WARNING);
+}
+
+function dog__get_transient_flash_entries($type = null) {
+	$key = DOG__TRANSIENT_FLASH_MESSAGES;
+	$entries = get_transient($key);
+	if ($type) {
+		$messages = $entries[$type];
+		unset($entries[$type]);
+	} else {
+		$messages = $entries;
+		$entries = null;
+	}
+	set_transient($key, $entries, DOG__TRANSIENT_FLASH_EXPIRE);
 	return $messages;
 }
 
-function dog__get_admin_form_errors() {
-	return dog__get_admin_form_messages(DOG_ADMIN__TRANSIENT_FORM_ERROR);
+function dog__get_transient_flash_messages() {
+	return dog__get_transient_flash_entries(DOG__TRANSIENT_FLASH_KEY_SUCCESS);
+}
+
+function dog__get_transient_flash_errors() {
+	return dog__get_transient_flash_entries(DOG__TRANSIENT_FLASH_KEY_ERROR);
+}
+
+function dog__get_transient_flash_warnings() {
+	return dog__get_transient_flash_entries(DOG__TRANSIENT_FLASH_KEY_WARNING);
+}
+
+function dog__prepare_transient_flash_messages() {
+	$entries = dog__get_transient_flash_entries();
+	$output = array();
+	if ($entries) {
+		foreach ($entries as $type => $messages) {
+			foreach ($messages as $m) {
+				array_push($output, '<div class="notice notice-' . $type . ' is-dismissible"><p><strong>' . $m . '</strong></p></div>');
+			}
+		}
+	}
+	return implode('', $output);
+}
+
+/***** shortcodes *****/
+
+function dog__strip_shortcode($code, $content) {
+    global $shortcode_tags;
+    $stack = $shortcode_tags;
+    $shortcode_tags = array($code => 1);
+    $content = strip_shortcodes($content);
+    $shortcode_tags = $stack;
+    return $content;
+}
+
+function dog__get_shortcode_text($tag, $params = null, $content = null) {
+	$output = '[' . $tag;
+	if ($params) {
+		$output .= ' ' . dog__attributes_array_to_html($params);
+	}
+	$output .=  ']';
+	if ($content) {
+		$output .= $content;
+		$output .= '[/' . $tag . ']';
+	}
+	return $output;
+}
+
+function dog__clean_shortcode_content($content, $skip = array()) {
+	if (!$skip['entities']) {
+		$content = html_entity_decode($content);
+	}
+	if (!$skip['tags']) {
+		$content = strip_tags($content);
+	}
+	if (!$skip['nbsp']) {
+		$content = preg_replace('/\x{00a0}/u', '', $content);
+	}
+	if (!$skip['comments']) {
+		$content = preg_replace('/' . DOG__SHORTCODE_COMMENT_REGEX . '/', '', $content);
+	}
+	if (!$skip['blank_lines']) {
+		$content = preg_replace('/^\s*/m', '', $content);
+	}
+	if (!$skip['line_breaks']) {
+		$content = str_replace(array("\r", "\n"), '', $content);
+	}
+	if (!$skip['trim']) {
+		$content = trim($content);
+	}
+	return $content;
+}
+
+function dog__get_shortcode_attr($attr_name, $attr_list, $shortcode_content = null, $clean_content = false, $clean_skip = array()) {
+	$attr_value = $attr_list[$attr_name];
+	if ($attr_value == DOG__SHORTCODE_KEYWORD_CONTENT) {
+		$attr_value = $shortcode_content;
+		if ($clean_content) {
+			$attr_value = dog__clean_shortcode_content($attr_value, $clean_skip);
+		}
+	}
+	return $attr_value;
 }
 
 /***** utils *****/
+
+function dog__closest($search, $list, $return_key = false, $prefer_lower = false) {
+	$closest_value = null;
+	$closest_value_key = null;
+   	foreach ($list as $key => $value) {
+   		$diff_closest = abs($search - $closest_value);
+      	$diff_current = abs($search - $value);
+		if (
+				$closest_value === null ||
+				$diff_closest > $diff_current ||
+				(
+					$diff_closest == $diff_current &&
+		            (
+		              ($prefer_lower && $value < $closest_value) ||
+		              (!$prefer_lower && $value > $closest_value)
+		            )
+				)
+			) {
+        	$closest_value = $value;
+        	$closest_value_key = $key;
+      	}
+   	}
+   	return $return_key ? $closest_value_key : $closest_value;
+}
+
+function dog__trim_explode($data, $separator = ',') {
+	$parts = array();
+	if ($data) {
+		$data = trim($data, $separator);
+		$parts = explode($separator, $data);
+		$parts = array_map('trim', $parts);
+	}
+	return $parts;
+}
+
+function dog__to_css_class($list) {
+	$class = array_filter($list);
+	$class = array_map('sanitize_html_class', $class);
+	$class = implode(' ', $class);
+	return $class;
+}
 
 function dog__merge_css_classes($default_class, $user_class) {
 	if ($user_class && !is_array($user_class)) {
@@ -447,9 +595,7 @@ function dog__merge_css_classes($default_class, $user_class) {
 	}
 	$user_class = $user_class ? $user_class : array();
 	$class = array_merge($default_class, $user_class);
-	$class = array_map('sanitize_html_class', $class);
-	$class = implode(' ', $class);
-	return $class;
+	return dog__to_css_class($class);
 }
 
 function dog__get_var_from_css_class($css_class, $var_prefix) {
@@ -487,7 +633,13 @@ function dog__log($data, $file = null) {
 function dog__replace_template_vars($template, $data) {
 	if ($template && $data) {
 		foreach ($data as $key => $value) {
-			$template = str_replace('${' . $key . '}', $value, $template);
+			if (is_array($value) || is_object($value)) {
+				foreach ($value as $k => $v) {
+					$template = str_replace('${' . $key . '.' . $k . '}', $v, $template);
+				}
+			} else {
+				$template = str_replace('${' . $key . '}', $value, $template);
+			}
 		}
 	}
 	return $template;
@@ -503,15 +655,6 @@ function dog__string_to_key($value, $prefix = null, $suffix = null) {
 
 function dog__nonce_var_key($name) {
 	return dog__string_to_key($name, DOG__NC_VAR_PREFIX);
-}
-
-function dog__strip_shortcode($code, $content) {
-    global $shortcode_tags;
-    $stack = $shortcode_tags;
-    $shortcode_tags = array($code => 1);
-    $content = strip_shortcodes($content);
-    $shortcode_tags = $stack;
-    return $content;
 }
 
 function dog__value_if_true($value, $condition) {
@@ -533,13 +676,9 @@ function dog__is_debug() {
 	return defined('WP_DEBUG') && WP_DEBUG;
 }
 
-function dog__debug_message($public_message, $debug_message, $append = true) {
-	if (dog__is_debug()) {
-		if ($append) {
-			return "{$public_message} ({$debug_message})";
-		} else {
-			return $debug_message;
-		}
+function dog__debug_message($public_message, $debug_message, $force_enable_debug = false) {
+	if ($force_enable_debug || dog__is_debug()) {
+		return "{$public_message} ({$debug_message})";
 	} else {
 		return $public_message;
 	}
@@ -580,6 +719,12 @@ function dog__clear_page_cache() {
 	}
 }
 
+function dogx__skip_cache() {
+	if (!defined('DONOTCACHEPAGE')) {
+		define('DONOTCACHEPAGE', true);
+	}
+}
+
 function dog__include_file($file_path, $tpl_data = null) {
 	include($file_path);
 }
@@ -606,4 +751,23 @@ function dog__get_attachment_url($id = null) {
 function dog__get_attachment_image_url($size = 'full', $attachment_id = null) {
 	$id = $attachment_id ? $attachment_id : get_the_id();
 	return reset(wp_get_attachment_image_src($id, $size));
+}
+
+function dog__curl($options, &$err = null, &$status = null) {
+	$default_options = array(
+		CURLOPT_HEADER => 0,
+		CURLOPT_POST => 0,
+		CURLOPT_RETURNTRANSFER => 1,
+		CURLOPT_SSL_VERIFYPEER => 0,
+	);
+	$options = array_replace($default_options, $options);
+	$ch = curl_init();
+    foreach ($options as $key => $value) {
+        curl_setopt($ch, $key, $value);
+	}
+    $response = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    return $response;
 }

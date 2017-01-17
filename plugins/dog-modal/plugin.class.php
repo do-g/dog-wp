@@ -32,6 +32,7 @@ class Dog_Modal {
 		return apply_filters('dog__md_options', array(
 			'popup' => array(
 				'auto_init' => false,
+				'debug' => false,
 			),
 			'gallery' => array(
 				'labels' => array(
@@ -41,6 +42,7 @@ class Dog_Modal {
 					'left_arrow_url' => dog__img_url('left-nav-arrow.svg'),
 					'right_arrow_url' => dog__img_url('right-nav-arrow.svg'),
 				),
+				'debug' => false,
 			),
 			'image_gallery' => array(
 				'auto_init' => false,
@@ -48,6 +50,7 @@ class Dog_Modal {
 				'slideshow_delay' => 0,
 				'use_background_images' => false,
 				'rel_fragment' => self::GALLERY_REL_FRAGMENT,
+				'debug' => false,
 			),
 		));
 	}

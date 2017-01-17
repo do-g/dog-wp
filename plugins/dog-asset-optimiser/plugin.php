@@ -3,7 +3,7 @@
 * Plugin Name: DOG Asset Optimiser
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-asset-optimiser
 * Description: Minifies and compresses assets
-* Version: 1.0.129
+* Version: 1.0.132
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

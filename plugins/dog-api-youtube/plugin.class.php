@@ -10,14 +10,16 @@ class Dog_Api_YouTube {
 	const URL_EMBED_VIDEO = 'https://www.youtube.com/embed/${id}';
 	const URL_EMBED_PLAYLIST = 'https://www.youtube.com/embed/videoseries?list=${pid}';
 	const URL_JS_API = 'https://www.youtube.com/iframe_api';
-	private $base_url = 'https://www.googleapis.com/youtube/v3/';
-	protected $url_fragment;
-	private $error;
+	const BASE_URL = 'https://www.googleapis.com/youtube/v3/';
+	const CSS_CLASS_EMPTY = 'youtube-empty';
+	const CSS_CLASS_ERROR = 'youtube-error';
+	protected $endpoint;
+	private $_error;
 	private static $_initialized = false;
 	private static $_config = array();
 	private static $_dependencies = array();
 
-	public function __construct() {}
+	/***** INIT *****/
 
 	public static function init() {
 		if (self::$_initialized) {
@@ -43,10 +45,92 @@ class Dog_Api_YouTube {
 		}
 	}
 
+	/***** LOGIC *****/
+
+	private function get_url($query_vars = array()) {
+		$query_vars = array_merge(array(
+			'key' => self::config('server_api_key'),
+		), $query_vars);
+		$url = self::BASE_URL . ltrim($this->endpoint, '/');
+		return dog__http_build_query($query_vars, $url);
+	}
+
+	protected function call($params = array()) {
+		$json = file_get_contents($this->get_url($params));
+		$response = json_decode($json);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			return $this->set_error(json_last_error_msg());
+		}
+		if ($response->error) {
+			return $this->set_error($response->error->message);
+		}
+		return $response;
+	}
+
+	public function get($params) {
+		return $this->call($params);
+	}
+
+	public function get_error() {
+		return $this->_error;
+	}
+
+	protected function set_error($message) {
+		$this->_error = $message;
+	}
+
+	public static function error_message($message) {
+		if (self::config('skip_cache_on_error')) {
+			dogx__skip_cache();
+		}
+		return '<div class="error ' . self::CSS_CLASS_ERROR . '">' . $message . '</div>';
+	}
+
+	public static function empty_message($message) {
+		return '<div class="empty ' . self::CSS_CLASS_EMPTY . '">' . $message . '</div>';
+	}
+
+	public static function get_video_url($video_id, $playlist_id = null) {
+		$url = dog__replace_template_vars(self::URL_VIDEO, array('id' => $video_id));
+		$query_vars = array();
+		if ($playlist_id) {
+			$query_vars['list'] = $playlist_id;
+		}
+		return dog__http_build_query($query_vars, $url);
+	}
+
+	public static function get_playlist_url($playlist_id) {
+		return dog__replace_template_vars(self::URL_PLAYLIST, array('id' => $playlist_id));
+	}
+
+	public static function get_video_embed_url($video_id, $playlist_id = null, $autoplay = false) {
+		$url = dog__replace_template_vars(self::URL_EMBED_VIDEO, array('id' => $video_id));
+		$query_vars = array();
+		if ($playlist_id) {
+			$query_vars['list'] = $playlist_id;
+		}
+		if ($autoplay) {
+			$query_vars['autoplay'] = 1;
+		}
+		return dog__http_build_query($query_vars, $url);
+	}
+
+	public static function get_playlist_embed_url($playlist_id, $autoplay = false) {
+		$url = dog__replace_template_vars(self::URL_EMBED_PLAYLIST, array('id' => $playlist_id));
+		$query_vars = array();
+		if ($autoplay) {
+			$query_vars['autoplay'] = 1;
+		}
+		return dog__http_build_query($query_vars, $url);
+	}
+
+	/***** CONFIG *****/
+
 	private static function load_config() {
 		return apply_filters('dog__ay_options', array(
 			'server_api_key' => null,
 			'load_js_api' => false,
+			'skip_cache_on_error' => true,
 		));
 	}
 
@@ -61,67 +145,6 @@ class Dog_Api_YouTube {
 			$config = $config[$arg];
 		}
 		return $config;
-	}
-
-	protected function get_url($params = array()) {
-		$params = array_merge(array('key' => self::config('server_api_key')), $params);
-		return $this->base_url . $this->url_fragment . '?' . http_build_query($params);
-	}
-
-	protected function request($params = array()) {
-		$json = file_get_contents($this->get_url($params));
-		$response = json_decode($json);
-		if (!$response) {
-			$this->set_error(json_last_error_msg());
-			return false;
-		}
-		if ($response->error) {
-			$this->set_error($response->error->message);
-			return false;
-		}
-		return $response;
-	}
-
-	public function get_error() {
-		return $this->error;
-	}
-
-	protected function set_error($message) {
-		$this->error = $message;
-	}
-
-	public static function get_video_url($video_id, $playlist_id = null) {
-		$url = dog__replace_template_vars(self::URL_VIDEO, array('id' => $video_id));
-		$query = array();
-		if ($playlist_id) {
-			$query['list'] = $playlist_id;
-		}
-		return $url . ($query ? '?' . urldecode(http_build_query($query)) : '');
-	}
-
-	public static function get_playlist_url($playlist_id) {
-		return dog__replace_template_vars(self::URL_PLAYLIST, array('id' => $playlist_id));
-	}
-
-	public static function get_video_embed_url($video_id, $playlist_id = null, $autoplay = false) {
-		$url = dog__replace_template_vars(self::URL_EMBED_VIDEO, array('id' => $video_id));
-		$query = array();
-		if ($playlist_id) {
-			$query['list'] = $playlist_id;
-		}
-		if ($autoplay) {
-			$query['autoplay'] = 1;
-		}
-		return $url . ($query ? '?' . urldecode(http_build_query($query)) : '');
-	}
-
-	public static function get_playlist_embed_url($playlist_id, $autoplay = false) {
-		$url = dog__replace_template_vars(self::URL_EMBED_PLAYLIST, array('id' => $playlist_id));
-		$query = array();
-		if ($autoplay) {
-			$query['autoplay'] = 1;
-		}
-		return $url . ($query ? '?' . urldecode(http_build_query($query)) : '');
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/
@@ -171,52 +194,18 @@ class Dog_Api_YouTube {
 
 class Dog_Api_YouTube_Videos extends Dog_Api_YouTube {
 
-	protected $url_fragment = 'videos';
-
-	public function __construct($api_key = null) {
-		parent::__construct($api_key);
-	}
-
-	public function get($ids, $params) {
-		$ids = is_array($ids) ? $ids : array($ids);
-		return $this->request(array_merge(array(
-			'id' => implode(',', $ids),
-		), $params));
-	}
+	protected $endpoint = 'videos';
 
 }
 
 class Dog_Api_YouTube_Playlists extends Dog_Api_YouTube {
 
-	protected $url_fragment = 'playlists';
-
-	public function __construct($api_key = null) {
-		parent::__construct($api_key);
-	}
-
-	public function get($ids, $params) {
-		$ids = is_array($ids) ? $ids : array($ids);
-		return $this->request(array_merge(array(
-			'id' => implode(',', $ids),
-		), $params));
-	}
+	protected $endpoint = 'playlists';
 
 }
 
 class Dog_Api_YouTube_PlaylistItems extends Dog_Api_YouTube {
 
-	protected $url_fragment = 'playlistItems';
-	private   $playlist_id;
-
-	public function __construct($playlist_id, $api_key = null) {
-		$this->playlist_id = $playlist_id;
-		parent::__construct($api_key);
-	}
-
-	public function get_all($params) {
-		return $this->request(array_merge(array(
-			'playlistId' => $this->playlist_id
-		), $params));
-	}
+	protected $endpoint = 'playlistItems';
 
 }

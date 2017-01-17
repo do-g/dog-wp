@@ -106,9 +106,13 @@ class Dog_Asset_Optimiser {
 		if ($enqueued) {
 			$vars = array();
 			foreach ($enqueued as $handle) {
-				if ($wp_scripts->registered[$handle]->extra['data']) {
+				$local_data = $wp_scripts->registered[$handle]->extra['data'];
+				if ($local_data) {
+					if (preg_match('/var dog__non = \{([^\]]*)\};/', $local_data, $matches)) {
+						$local_data = trim(str_replace($matches[0], '', $local_data));
+					}
 					$hash = md5($wp_scripts->registered[$handle]->src);
-					$vars[$hash] = $wp_scripts->registered[$handle]->extra['data'];
+					$vars[$hash] = $local_data;
 				}
 			}
 			dog__update_option(self::OPTION_JS_VARS, $vars);
@@ -145,9 +149,9 @@ class Dog_Asset_Optimiser {
 			if (Dog_Form::form_is_valid()) {
 				$result = self::process_assets();
 				if (is_wp_error($result)) {
-					dog__set_admin_form_error($result->get_error_message());
+					dog__set_transient_flash_error($result->get_error_message());
 				} else {
-					dog__set_admin_form_message(dog__txt('Resursele statice au fost optimizate'));
+					dog__set_transient_flash_message(dog__txt('Resursele statice au fost optimizate'));
 				}
 			} else {
 				self::set_form_errors();
@@ -163,9 +167,9 @@ class Dog_Asset_Optimiser {
 				dog__delete_option(Dog_Asset_Optimiser::OPTION_VERSION_CSS);
 				dog__delete_option(Dog_Asset_Optimiser::OPTION_VERSION_JS);
 				if (self::delete_assets()) {
-					dog__set_admin_form_message(dog__txt('Optimizarea resurselor a fost revocată'));
+					dog__set_transient_flash_message(dog__txt('Optimizarea resurselor a fost revocată'));
 				} else {
-					dog__set_admin_form_error(dog__txt('Sistemul a întâmpinat o eroare. Unele fișiere nu pot fi șterse'));
+					dog__set_transient_flash_error(dog__txt('Sistemul a întâmpinat o eroare. Unele fișiere nu pot fi șterse'));
 				}
 			} else {
 				self::set_form_errors();
@@ -176,9 +180,9 @@ class Dog_Asset_Optimiser {
 			Dog_Form::validate_honeypot();
 			if (Dog_Form::form_is_valid()) {
 				if (self::detect_assets()) {
-					dog__set_admin_form_message(dog__txt('Resursele au fost detectate'));
+					dog__set_transient_flash_message(dog__txt('Resursele au fost detectate'));
 				} else {
-					dog__set_admin_form_error(dog__txt('Sistemul a întâmpinat o eroare. Resursele nu pot fi detectate'));
+					dog__set_transient_flash_error(dog__txt('Sistemul a întâmpinat o eroare. Resursele nu pot fi detectate'));
 				}
 			} else {
 				self::set_form_errors();
@@ -198,14 +202,15 @@ class Dog_Asset_Optimiser {
 				}
 			}
 		}
-		dog__set_admin_form_error($error_message);
+		dog__set_transient_flash_error($error_message);
 	}
 
 	private static function detect_assets() {
 		$response = wp_remote_get(home_url('/'), array(
 			'headers' => array(self::DETECT_HEADER => 1),
 		));
-		return strpos($response['body'], self::DETECT_FRAGMENT) !== false;
+		$body = wp_remote_retrieve_body($response);
+		return strpos($body, self::DETECT_FRAGMENT) !== false;
 	}
 
 	private static function delete_assets() {
@@ -242,11 +247,13 @@ class Dog_Asset_Optimiser {
 			foreach ($styles_list as $s) {
 				$s = trim($s);
 				$info = wp_remote_get($s);
-				if (!is_array($info) || !$info['response'] || !$info['response']['code'] || $info['response']['code'] != 200) {
+				$code = wp_remote_retrieve_response_code($info);
+				if (!is_array($info) || !$info['response'] || !$code || $code != 200) {
 					array_push($errors, $s);
 					continue;
 				}
-				$styles_content .= $info['body'] ? "{$info['body']}\n\n" : '';
+				$body = wp_remote_retrieve_body($info);
+				$styles_content .= $body ? "{$body}\n\n" : '';
 			}
 			$styles_content = trim($styles_content);
 			$styles_content = self::minify_style($styles_content);
@@ -274,13 +281,15 @@ class Dog_Asset_Optimiser {
 			foreach ($scripts_list as $s) {
 				$s = trim($s);
 				$info = wp_remote_get($s);
-				if (!is_array($info) || !$info['response'] || !$info['response']['code'] || $info['response']['code'] != 200) {
+				$code = wp_remote_retrieve_response_code($info);
+				if (!is_array($info) || !$info['response'] || !$code || $code != 200) {
 					array_push($errors, $s);
 					continue;
 				}
 				$hash = md5($s);
 				$scripts_content .= $script_vars[$hash] ? "{$script_vars[$hash]}\n\n" : '';
-				$scripts_content .= $info['body'] ? "{$info['body']}\n\n" : '';
+				$body = wp_remote_retrieve_body($info);
+				$scripts_content .= $body ? "{$body}\n\n" : '';
 			}
 			$scripts_content = trim($scripts_content);
 			$scripts_content = self::minify_script($scripts_content);

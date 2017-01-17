@@ -1,0 +1,12 @@
+.dog-event-status {
+	font-size: 20px;
+}
+
+.dog-event-status.active-1 {
+	color: #2aaf15;
+}
+
+.dog-event-status.active-0 {
+	color: #ff0000;
+	font-size: 26px;
+}

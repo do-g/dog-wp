@@ -28,7 +28,7 @@ $dog__schemaorg_page_types = apply_filters('dog__schemaorg_page_types', array(
 	'SearchResultsPage' => array(),
 ));
 
-$dog__template_override = apply_filters('dog__template_override', array(
+$dog__slug_template_map = apply_filters('dog__slug_template_map', array(
 	'page-acasa' => array('home'),
 	'page-contact' => array('contact-us'),
 ));
@@ -175,42 +175,47 @@ function dog__contact_success_url() {
 }
 
 /**
- * 	$custom_data = array(
- *	 	'receiver' => array(
+ * 	$params = array(
+ *		'post' => array(),
+ *		'template_vars' => array(),
+ *		'headers' => array(),
+ *		'email' => '',
+ *		'cc' => array(),
+ *		'subject' => '',
+ *		'template' => '',
+ *		'language' => '',
+ *		'confirmation' => array(
  *			'template_vars' => array(),
  *			'headers' => array(),
- *			'email' => '',
+ *			'email_field' => '',
+ *			'cc' => array(),
  *			'subject' => '',
  *			'template' => '',
- *			'template_language' => '',
- *		),
- *		'sender'    => array(
- *			'email_key' => '',
- *			'ignore' => false,
- *			'template_vars' => array(),
- *			'headers' => array(),
- *			'subject' => '',
- *			'template' => '',
- *			'template_language' => '',
+ *			'language' => '',
  *		),
  *	);
  */
-function dog__send_form_mail_standard($custom_data = null) {
+function dog__send_form_mail_standard($params = null) {
 	$main_domain = dog__site_domain(true);
 	$full_domain = dog__site_domain();
 	$site_title = get_bloginfo('name');
 	$site_title_safe = str_replace(',', '', $site_title);
 
-	$default_template_vars = array_merge(Dog_Form::get_post_data(), array(
+	$post_data = $params['post'] ? $params['post'] : Dog_Form::get_post_data();
+	$default_template_vars = array_merge($post_data, array(
 		'website_domain' => $full_domain,
 		'website_url' 	 => site_url(),
 		'website_title'  => $site_title,
 	));
 
-	$custom_template_vars = dog__value_or_default($custom_data['receiver']['template_vars'], array());
+	$confirmation = $params['confirmation'];
+	$confirmation_email_field = dog__value_or_default($confirmation['email_field'], 'contact_email');
+	$confirmation_email = $post_data[$confirmation_email_field];
+
+	$custom_template_vars = dog__value_or_default($params['template_vars'], array());
 	$template_vars = array_merge($default_template_vars, $custom_template_vars);
 
-	$custom_headers = dog__value_or_default($custom_data['receiver']['headers'], array());
+	$custom_headers = dog__value_or_default($params['headers'], array());
 	$headers = array_merge(array(
 		'sender' => 'noreply@' . $main_domain,
 		'from' => array(
@@ -218,47 +223,72 @@ function dog__send_form_mail_standard($custom_data = null) {
 			'email' => 'noreply@' . $main_domain,
 		),
 		'reply' => array(
-			'name' => $template_vars['contact_name'],
-			'email' => $template_vars['contact_email'],
+			'email' => $confirmation_email,
 		),
 	), $custom_headers);
 
-	$custom_email_key = dog__value_or_default($custom_data['sender']['email_key'], 'contact_email');
-	if (!$template_vars[$custom_email_key]) {
+	if (!$confirmation_email) {
 		unset($headers['reply']);
 	}
 
-	$recipient = dog__value_or_default($custom_data['receiver']['email'], (defined('DOG__EMAIL_CONTACT') && DOG__EMAIL_CONTACT ? DOG__EMAIL_CONTACT : get_option('admin_email')));
+	$recipient = dog__value_or_default($params['email'], (defined('DOG__EMAIL_CONTACT') && DOG__EMAIL_CONTACT ? DOG__EMAIL_CONTACT : get_option('admin_email')));
+	$cc = isset($params['cc']) && is_array($params['cc']) ? $params['cc'] : array($params['cc']);
+	$recipients = array_merge(array($recipient), $cc);
 
-	$subject = dog__value_or_default($custom_data['receiver']['subject'], dog__txt('Ai primit un mesaj de contact', null, dog__default_language()));
+	$template_name = $params['template'] ? $params['template'] : 'contact-receiver';
+	$language = dog__value_or_default($params['language'], dog__default_language());
+	if (class_exists('Dog_Email_Templates')) {
+		$tpl = Dog_Email_Templates::get($template_name, $template_vars, $language);
+		if (!$tpl) {
+			return array('read_template' => dog__txt("Șablonul ({$template_name}) pentru limba ({$language}) nu a fost găsit"));
+		}
+		$subject = $tpl->subject;
+		$template = $tpl->message;
+	} else {
+		$subject = dog__value_or_default($params['subject'], dog__txt('Ai primit un mesaj de contact', null, $language));
+		$template = dog__get_theme_email_template($template_name, $template_vars, $language);
+		if ($template === false) {
+			return array('read_template' => dog__txt("Șablonul ({$template_name}) pentru limba ({$language}) nu există sau nu poate fi citit"));
+		}
+	}
 
-	$custom_template = $custom_data['receiver']['template'] ? "{$custom_data['receiver']['template']}-email-receiver" : null;
-	$template = dog__theme_email_path(dog__value_or_default($custom_template, 'contact-email-receiver'));
-
-	$result = dog__send_mail($recipient, $subject, $headers, $template, $template_vars, $custom_data['receiver']['template_language'], $custom_data['receiver']['attachments']);
+	$result = dog__send_mail($recipients, $subject, $template, $headers, $params['attachments']);
 	if (is_array($result)) {
 		return $result;
 	}
 
-	if ($template_vars[$custom_email_key] && !$custom_data['sender']['ignore']) {
-		$custom_template_vars = dog__value_or_default($custom_data['sender']['template_vars'], array());
+	if ((!$params || $confirmation) && $confirmation_email) {
+		$custom_template_vars = dog__value_or_default($confirmation['template_vars'], array());
 		$template_vars = array_merge($default_template_vars, $custom_template_vars);
 
-		$custom_headers = dog__value_or_default($custom_data['sender']['headers'], array());
+		$custom_headers = dog__value_or_default($confirmation['headers'], array());
 		$headers['reply'] = array(
 			'name' => $site_title_safe,
 			'email' => $recipient,
 		);
 		$headers = array_merge($headers, $custom_headers);
 
-		$subject = dog__value_or_default($custom_data['sender']['subject'], dog__txt('Ai trimis un mesaj de contact'));
+		$template_name = $confirmation['template'] ? $confirmation['template'] : 'contact-sender';
+		$language = dog__value_or_default($confirmation['language'], dog__active_language());
+		if (class_exists('Dog_Email_Templates')) {
+			$tpl = Dog_Email_Templates::get($template_name, $template_vars, $language);
+			if (!$tpl) {
+				return array('read_template' => dog__txt("Șablonul ({$template_name}) pentru limba ({$language}) nu a fost găsit"));
+			}
+			$subject = $tpl->subject;
+			$template = $tpl->message;
+		} else {
+			$subject = dog__value_or_default($confirmation['subject'], dog__txt('Ai trimis un mesaj de contact', null, $language));
+			$template = dog__get_theme_email_template($template_name, $template_vars, $language);
+			if ($template === false) {
+				return array('read_template' => dog__txt("Șablonul ({$template_name}) pentru limba ({$language}) nu există sau nu poate fi citit"));
+			}
+		}
 
-		$custom_template = $custom_data['sender']['template'] ? "{$custom_data['sender']['template']}-email-sender" : null;
-		$template = dog__theme_email_path(dog__value_or_default($custom_template, 'contact-email-sender'));
+		$cc = isset($confirmation['cc']) && is_array($confirmation['cc']) ? $confirmation['cc'] : array($confirmation['cc']);
+		$recipients = array_merge(array($confirmation_email), $cc);
 
-		$template_language = dog__value_or_default($custom_data['sender']['template_language'], dog__active_language());
-
-		$result = dog__send_mail($template_vars[$custom_email_key], $subject, $headers, $template, $template_vars, $template_language, $custom_data['sender']['attachments']);
+		$result = dog__send_mail($recipients, $subject, $template, $headers, $confirmation['attachments']);
 		if (is_array($result)) {
 			return $result;
 		}
@@ -286,25 +316,31 @@ function dog__schema_page_type() {
 	return $page_type;
 }
 
-$dog__current_template;
+$dog__active_template;
 function dog__override_template($template) {
-	global $dog__template_override, $dog__current_template;
-	if ($dog__template_override) {
+	global $dog__slug_template_map, $dog__active_template;
+	$override = apply_filters('dog__override_template', $template);
+	if ($override && $override != $template) {
+		$new_template = locate_template(array($override . '.php'));
+		$template = $new_template ? $new_template : $template;
+	} else if ($dog__slug_template_map) {
 		$current = get_queried_object();
 		$slug = $current->slug ? $current->slug : $current->post_name;
-		foreach ($dog__template_override as $override => $slugs) {
+		foreach ($dog__slug_template_map as $override => $slugs) {
 			if (in_array($slug, $slugs)) {
 				$new_template = locate_template(array($override . '.php'));
-				if ($new_template) {
-					$dog__current_template = $new_template;
-					return $new_template;
-				}
+				$template = $new_template ? $new_template : $template;
 				break;
 			}
 		}
 	}
-	$dog__current_template = $template;
+	$dog__active_template = $template;
 	return $template;
+}
+
+function dog__get_active_template() {
+	global $dog__active_template;
+	return $dog__active_template;
 }
 
 function dog__enqueue_assets_high_priority() {
@@ -318,11 +354,12 @@ function dog__enqueue_assets_low_priority() {
 	$dog_af_plugin_active = class_exists('Dog_Asset_Optimiser');
 	$cached_styles = $dog_af_plugin_active ? Dog_Asset_Optimiser::has_cached_styles() : false;
 	if ($cached_styles !== false) {
-		wp_enqueue_style('cache_styles', $cached_styles, null, null);
+		wp_enqueue_style('dog_min_styles', $cached_styles, null, null);
 	}
 	$cached_scripts = $dog_af_plugin_active ? Dog_Asset_Optimiser::has_cached_scripts() : false;
 	if ($cached_scripts !== false) {
-		wp_enqueue_script('cache_script', $cached_scripts, null, null, true);
+		wp_enqueue_script('dog_min_scripts', $cached_scripts, null, null, true);
+		wp_localize_script('dog_min_scripts', 'dog__non', Dog_Shared::get_nonces());
 	}
 	dog__call_x_function(__FUNCTION__);
 }
@@ -330,6 +367,10 @@ function dog__enqueue_assets_low_priority() {
 function dog__dequeue_styles() {
 	wp_dequeue_style('yoast-seo-adminbar');
 	dog__call_x_function(__FUNCTION__);
+}
+
+function dog__min_styles_active() {
+	return wp_style_is('dog_min_styles');
 }
 
 function dog__js_vars($vars) {
@@ -425,7 +466,7 @@ function dog__custom_image_sizes($sizes) {
 
 function dog__handle_post() {
 	if (dog__is_post()) {
-		$action_hook = $_POST['action'];
+		$action_hook = $_POST[Dog_Form::POST_KEY_HANDLER];
 		$callable = "dog__handle_post_{$action_hook}";
 		$callable_x = "dogx__handle_post_{$action_hook}";
 		if (is_callable($callable_x)) {
@@ -547,6 +588,7 @@ if (!is_admin()) {
 	add_filter('use_default_gallery_style', '__return_false');
 	add_filter('template_include', 'dog__override_template', 99);
 	add_filter('clean_url', 'dog__async_defer', 11, 1);
+	add_filter('show_admin_bar', '__return_false');
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_high_priority', 0);
 	add_action('wp_enqueue_scripts', 'dog__enqueue_assets_low_priority', 99990);
 	add_action('pre_get_posts', 'dog__alter_main_query');

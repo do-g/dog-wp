@@ -7,6 +7,7 @@ class Dog_Shared {
 	const PLUGIN_SLUG = 'dog-shared';
 	const MENU_HOOK_PREFIX = 'optiuni-dog';
 	const AJAX_CALLBACK = 'dog';
+	private static $_config = array();
 	private static $_initialized = false;
 
 	public static function init() {
@@ -25,8 +26,9 @@ class Dog_Shared {
 	}
 
 	public static function enqueue_site_assets() {
-		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('vendor_scripts'), null, true);
+		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), self::config('script_dependencies'), null, true);
 		wp_localize_script('dog_sh_scripts', 'dog__sh', self::get_js_vars());
+		wp_localize_script('dog_sh_scripts', 'dog__non', self::get_nonces());
 	}
 
 	public static function enqueue_admin_assets() {
@@ -34,10 +36,12 @@ class Dog_Shared {
 		wp_enqueue_script('dog_sh_scripts', dog__plugin_url('scripts.js', self::PLUGIN_SLUG), array('jquery'), null, true);
 		wp_enqueue_script('dog_sh_admin_scripts', dog__plugin_url('admin.js', self::PLUGIN_SLUG), array('dog_sh_scripts'), null, true);
 		wp_localize_script('dog_sh_scripts', 'dog__sh', self::get_js_vars());
+		wp_localize_script('dog_sh_scripts', 'dog__non', self::get_nonces());
 	}
 
 	public static function get_js_vars() {
-		$vars = apply_filters('dog__sh_js_vars', array(
+		return apply_filters('dog__sh_js_vars', array(
+			'lang' => dog__active_language(),
 			'is_debug' => dog__is_debug(),
 			'home_url' => dog__home_url(),
 			'safe_home_url' => esc_url(dog__home_url()),
@@ -56,8 +60,31 @@ class Dog_Shared {
 				'alert_request_error' => dog__txt('Sistemul a întâmpinat o eroare. Cererea nu poate fi trimisă'),
 			),
 		));
-		$nonces = apply_filters('dog__sh_js_nonces', array());
-		return array_merge($vars, $nonces);
+	}
+
+	public static function get_nonces() {
+		return apply_filters('dog__sh_js_nonces', array());
+	}
+
+	/***** CONFIG *****/
+
+	private static function load_config() {
+		return apply_filters('dog__sh_options', array(
+			'script_dependencies' => array('vendor_scripts'),
+		));
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
 	}
 
 	/***** AJAX *****/

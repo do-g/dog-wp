@@ -29,7 +29,7 @@ class Dog_Media_Features {
 			add_filter('post_mime_types', array(__CLASS__, 'filter_mime_types'));
 			add_filter('upload_mimes', array(__CLASS__, 'allow_mime_types'));
 			add_filter('dog__sh_js_nonces', array(__CLASS__, 'nonces'));
-			self::register_media_taxonomy();
+			self::register_taxonomy();
 			add_action(self::config('name') . '_add_form_fields', 'dog_admin__render_taxonomy_add_css_class', 10);
 			add_action(self::config('name') . '_edit_form_fields', 'dog_admin__render_taxonomy_edit_css_class', 10);
 			add_action('create_' . self::config('name'), 'dog_admin__save_taxonomy_css_class');
@@ -63,6 +63,7 @@ class Dog_Media_Features {
 		      	),
 		      	'hierarchical' => true,
 		        'show_admin_column' => true,
+		        'update_count_callback' => '_update_generic_term_count',
 		        'rewrite' => array('slug' => self::DEFAULT_TAXONOMY_SLUG),
 			),
 		));
@@ -81,7 +82,7 @@ class Dog_Media_Features {
 		return $config;
 	}
 
-	public static function register_media_taxonomy() {
+	public static function register_taxonomy() {
 		register_taxonomy(self::config('name'), 'attachment', self::config('taxonomy'));
 	}
 

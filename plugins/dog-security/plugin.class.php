@@ -41,7 +41,7 @@ class Dog_Security {
 	}
 
 	public static function options_page() {
-		require_once DOG__SC_PLUGIN_DIR . 'options.php';
+		require_once dog__sibling_path('options.php', __FILE__);
 	}
 
 	public static function save_options() {
@@ -52,10 +52,10 @@ class Dog_Security {
 			if (Dog_Form::form_is_valid()) {
 				$result = self::check_security();
 				if (is_wp_error($result)) {
-					dog__set_admin_form_error($result->get_error_message());
+					dog__set_transient_flash_error($result->get_error_message());
 				} else {
-					set_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE, $result, DOG_ADMIN__TRANSIENT_EXPIRE_FORM_MESSAGE);
-					dog__set_admin_form_message(dog__txt('Verificarea s-a finalizat cu succes. Am găsit ${n} fișier(e) nesecurizate', array('n' => count($result))));
+					set_transient(DOG_ADMIN__TRANSIENT_FORM_RESPONSE, $result, DOG__TRANSIENT_FLASH_EXPIRE);
+					dog__set_transient_flash_message(dog__txt('Verificarea s-a finalizat cu succes. Am găsit ${n} fișier(e) nesecurizate', array('n' => count($result))));
 				}
 			} else {
 				$error_message = dog__txt('Sistemul a întâmpinat erori la procesarea formularului:');
@@ -67,7 +67,7 @@ class Dog_Security {
 						}
 					}
 				}
-				dog__set_admin_form_error($error_message);
+				dog__set_transient_flash_error($error_message);
 			}
 		}
    		wp_redirect(admin_url('admin.php?page=' . self::PLUGIN_SLUG));
@@ -105,7 +105,9 @@ class Dog_Security {
 				$fragment = str_replace(WP_CONTENT_DIR, '', $file);
 				$url = WP_CONTENT_URL . $fragment;
 				$response = wp_remote_get($url);
-				if ($response && (!empty($response['body']) || $response['response']['code'] != 404)) {
+				$code = wp_remote_retrieve_response_code($response);
+				$body = wp_remote_retrieve_body($response);
+				if ($response && (!empty($body) || $code != 404)) {
 					array_push($issues, '<a href="' . $url . '" target="_blank">' . $fragment . '</a>');
 				}
 			}

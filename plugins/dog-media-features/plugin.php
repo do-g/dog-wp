@@ -3,7 +3,7 @@
 * Plugin Name: DOG Media Features
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-media-features
 * Description: Adds categories, mime types, custom filters, etc. to media
-* Version: 1.0.113
+* Version: 1.0.116
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

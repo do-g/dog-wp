@@ -3,7 +3,7 @@
 * Plugin Name: DOG Modal YouTube
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-modal-youtube
 * Description: Adds YouTube modal popup & video gallery features to website
-* Version: 1.0.26
+* Version: 1.0.33
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

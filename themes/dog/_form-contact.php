@@ -1,7 +1,7 @@
 <?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
 <form method="post" class="page-form contact-form" id="contact-form">
 	<?php
-		Dog_Form::render_form_errors();
+		Dog_Form::render_form_messages();
 		Dog_Form::render_form_field(array(
 			'wrapper' => array(),
 			'label' => array(

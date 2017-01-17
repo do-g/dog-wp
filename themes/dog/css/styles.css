@@ -1,6 +1,8 @@
 /***** html elements *****/
 
-* {
+*,
+::before,
+::after {
 	box-sizing: border-box;
 }
 
@@ -146,7 +148,7 @@ body.no-sidebar .content-column.side {
 	display: none;
 }
 
-/***** preloader *****/
+/***** preloaders *****/
 
 body.preloading .page-wrapper {
 	opacity: 0;
@@ -173,6 +175,99 @@ body.preloading .preloader {
 	height: 100%;
 	background: #ed5e4e;
 	transition: all .2s;
+}
+
+.busy-indicator,
+.busy::before {
+	height: 32px;
+  width: 32px;
+  margin: 0 auto;
+  -webkit-animation: spin .6s infinite linear;
+  -moz-animation: spin .6s infinite linear;
+  -o-animation: spin .6s infinite linear;
+  animation: spin .6s infinite linear;
+  border: 5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 100%;
+}
+
+.busy {
+	position: relative;
+}
+
+.busy::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin: -16px 0 0 -16px;
+}
+
+.busy-indicator.small,
+.busy.small::before {
+	height: 24px;
+  width: 24px;
+  border-width: 4px;
+}
+
+.busy-indicator.large,
+.busy.large::before {
+	height: 48px;
+  width: 48px;
+  border-width: 6px;
+}
+
+.busy.small::before {
+	margin: -12px 0 0 -12px;
+}
+
+.busy.large::before {
+	margin: -24px 0 0 -24px;
+}
+
+.busy-indicator.dark,
+.busy.dark::before {
+	border-color: rgba(0, 0, 0, 0.15);
+  border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+.spinner {
+	animation: spin 1s linear infinite;
+}
+
+/***** animations *****/
+
+@-webkit-keyframes spin {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}
+@-moz-keyframes spin {
+  from {
+    -moz-transform: rotate(0deg);
+  }
+  to {
+    -moz-transform: rotate(360deg);
+  }
+}
+@-o-keyframes spin {
+  from {
+    -o-transform: rotate(0deg);
+  }
+  to {
+    -o-transform: rotate(360deg);
+  }
+}
+@keyframes spin {
+  from {
+  	transform: rotate(0deg);
+  }
+  to {
+  	transform: rotate(360deg);
+ 	}
 }
 
 /***** responsive visibility *****/

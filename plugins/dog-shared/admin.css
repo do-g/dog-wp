@@ -64,3 +64,29 @@
 #toplevel_page_dog-shared .wp-submenu .wp-first-item {
 	display: none;
 }
+
+#adminmenu .wp-not-current-submenu .wp-submenu,
+.folded #adminmenu .wp-has-current-submenu .wp-submenu {
+	min-width: 170px;
+}
+
+.dog-custom-field.context-normal {
+	padding: 20px 0 15px 0;
+}
+
+.dog-custom-field.context-normal label {
+	display: block;
+	font-weight: bold;
+	padding: 0 0 5px 0;
+}
+
+.dog-custom-field.context-normal input,
+input#post_name {
+	width: 100%;
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+.wp-header-end.spacer {
+	margin-bottom: 10px;
+}

@@ -1,20 +1,7 @@
-<?php
-	require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
-	$messages = dog__get_admin_form_messages();
-	$errors = dog__get_admin_form_errors();
-?>
+<?php require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php') ?>
 <div class="wrap dog-admin--page">
-	<h1>Opțiuni administrare memorie cache</h1>
-	<?php if ($messages) {
-		foreach ($messages as $m) { ?>
-			<div class='updated'><p><strong><?= $m ?></strong></p></div>
-		<?php }
-	}
-	if ($errors) {
-		foreach ($errors as $e) { ?>
-			<div class='error'><p><strong><?= $e ?></strong></p></div>
-		<?php }
-	} ?>
+	<h1><?= dog__txt('Opțiuni administrare memorie cache') ?></h1>
+	<?= dog__prepare_transient_flash_messages() ?>
 	<form name="form" method="post" action="admin-post.php" class="dog-admin--form dog-form-cache-manager">
 	 	<p class="page-description"><?= dog__txt('Apasă pe butonul de mai jos pentru a șterge fragmentele păstrate în memoria cache.
 	 		Aceste fragmente se actualizează automat la un anumit interval de timp.

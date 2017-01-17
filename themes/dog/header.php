@@ -3,9 +3,7 @@
 <html <?php language_attributes(); ?>>
 <head>
 	<meta charset="<?php bloginfo('charset'); ?>">
-	<meta content='IE=edge,chrome=1' http-equiv='X-UA-Compatible'>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="image" content="page-image.jpg" />
 	<?php wp_head(); ?>
 </head>
 <body class="<?= dog__body_class(array('preloading')) ?>" itemscope itemtype="http://schema.org/<?= dog__schema_page_type() ?>">
@@ -14,7 +12,7 @@
 	<section class="page-wrapper">
 		<header class="page-header">
 			<div class="w-container">
-				<a href="<?= esc_url(home_url('/')) ?>" id="logo" title="<?= dog__txt('Acasă') ?>">
+				<a href="<?= esc_url(home_url('/')) ?>" class="logo" title="<?= dog__txt('Acasă') ?>">
 					<img src="<?= dog__img_url('logo.png') ?>" />
 					<span><?= dog__txt('Bine ați venit') ?></span>
 				</a>
