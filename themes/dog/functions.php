@@ -35,6 +35,30 @@ $dog__slug_template_map = apply_filters('dog__slug_template_map', array(
 
 $dog__breadcrumbs = array();
 
+$dog__config = array();
+
+function dog__config() {
+	global $dog__config;
+	if (!$dog__config) {
+		$dog__config = dog__load_config();
+	}
+	$config = $dog__config;
+	$args = func_get_args();
+	while ($args) {
+		$arg = array_shift($args);
+		$config = $config[$arg];
+	}
+	return $config;
+}
+
+function dog__load_config() {
+	return apply_filters('dog__options', array(
+		'sidebar_on_left' => false,
+		'article_list_image_on_left' => true,
+		'contact_email' => null,
+	));
+}
+
 function dog__add_breadcrumb($label, $url = null, $options = array()) {
 	global $dog__breadcrumbs;
 	array_push($dog__breadcrumbs, array(
@@ -231,7 +255,7 @@ function dog__send_form_mail_standard($params = null) {
 		unset($headers['reply']);
 	}
 
-	$recipient = dog__value_or_default($params['email'], (defined('DOG__EMAIL_CONTACT') && DOG__EMAIL_CONTACT ? DOG__EMAIL_CONTACT : get_option('admin_email')));
+	$recipient = dog__value_or_default($params['email'], dog__config('contact_email') ?: get_option('admin_email'));
 	$cc = isset($params['cc']) && is_array($params['cc']) ? $params['cc'] : array($params['cc']);
 	$recipients = array_merge(array($recipient), $cc);
 

@@ -202,6 +202,14 @@ function dog__base_theme_version() {
 	return dog__theme_version(DOG__BASE_THEME_NAME);
 }
 
+function dog__is_dog_plugin($plugin_name) {
+	if (strpos($plugin_name, '/')) {
+		$parts = explode('/', $plugin_name);
+		$plugin_name = reset($parts);
+	}
+	return substr($plugin_name, 0, strlen(DOG__PLUGIN_PREFIX)) === DOG__PLUGIN_PREFIX;
+}
+
 /***** options *****/
 
 function dog__get_option($name, $default = null) {
@@ -251,7 +259,8 @@ function dog__extract_file_labels($filepath) {
 }
 
 function dog__website_language() {
-	return strtolower(reset(explode('-', get_bloginfo('language'))));
+	$parts = explode('-', get_bloginfo('language'));
+	return strtolower(reset($parts));
 }
 
 function dog__default_language() {

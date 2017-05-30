@@ -3,7 +3,7 @@
 * Plugin Name: DOG API Google Drive
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-api-gdrive
 * Description: Connects with the Google Drive API
-* Version: 1.0.0
+* Version: 1.0.1
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

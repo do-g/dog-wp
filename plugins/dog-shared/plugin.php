@@ -3,7 +3,7 @@
 * Plugin Name: DOG Shared
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-shared
 * Description: Holds shared plugin functionality
-* Version: 1.0.258
+* Version: 1.0.269
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

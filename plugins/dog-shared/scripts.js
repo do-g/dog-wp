@@ -437,10 +437,11 @@ jQuery.fn.prevSibling = function(selector) {
 jQuery.fn.scrollTo = function(target, options, callback){
   var settings = jQuery.extend({
     target: target,
-    easing: 'swing'
+    easing: 'swing',
+    origin: 'top'
   }, options);
   settings.speed = settings.speed ? settings.speed : 600;
-  settings.offset = settings.offset ? settings.offset : 0;
+  settings.offset = settings.offset ? parseInt(settings.offset) : 0;
   this.each(function() {
     var $scrollPane = jQuery(this);
     var $animationPane = $scrollPane;
@@ -449,15 +450,27 @@ jQuery.fn.scrollTo = function(target, options, callback){
     if (this == window) {
       $animationPane = jQuery('body, html');
       callback_for = 'html';
-      parent_scroll_top = 0;
     }
     var scrollY;
     if (typeof settings.target == 'number') {
       scrollY = settings.target;
     } else {
       var $scrollTarget = jQuery(settings.target);
-      var position_from_top = this == window ? $scrollTarget.offset().top : $scrollTarget.position().top;
-      scrollY = position_from_top + parent_scroll_top - parseInt(settings.offset);
+      var position_from_top = this == window ? $scrollTarget.offset().top - parent_scroll_top : $scrollTarget.position().top;
+      scrollY = position_from_top + parent_scroll_top - settings.offset;
+      if (settings.origin == 'closest') {
+        var viewport_height = $scrollPane.innerHeight();
+        var target_height = $scrollTarget.outerHeight();
+        var position_from_bottom = viewport_height - position_from_top - target_height;
+        if (Math.abs(position_from_bottom) < Math.abs(position_from_top)) {
+          var scrollYtmp = parent_scroll_top - position_from_bottom + settings.offset;
+          if (scrollYtmp >= 0) {
+            scrollY = scrollYtmp;
+          } else {
+            console.log('Unable to scroll to closest (bottom ' + scrollYtmp + 'px)');
+          }
+        }
+      }
     }
     if ($scrollPane.scrollTop() == scrollY) {
       if (typeof callback == 'function' && (!$callback_for || jQuery(this).is($callback_for))) {
@@ -600,6 +613,24 @@ jQuery.fn.toggleFrozen = function(options) {
     }
   });
 }
+
+jQuery.fn.setCursorAtEnd = function() {
+  return this.each(function() {
+    var $el = jQuery(this), el = this;
+    if (!$el.is(':focus')) {
+     $el.focus();
+    }
+    if (el.setSelectionRange) {
+      var len = $el.val().length * 2;
+      setTimeout(function() {
+        el.setSelectionRange(len, len);
+      }, 1);
+    } else {
+      $el.val($el.val());
+    }
+    this.scrollTop = 999999;
+  });
+};
 
 /***** native overrides *****/
 

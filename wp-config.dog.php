@@ -1,9 +1,8 @@
 <?php
 
 define('DOG__ENV', 'dev');
-define('DOG__EMAIL_CONTACT', null);
-define('DOG__SIDEBAR_ON_LEFT', false);
 define('DOG__OPTION_PREFIX', 'dog__');
+define('DOG__PLUGIN_PREFIX', 'dog-');
 define('DOG__TEXT_DOMAIN', 'dog');
 define('DOG__THEMES', 'dog, dogx');
 define('DOG__NC_NAME', 'non4c0ef5ece8c4765116c845babxg7y');

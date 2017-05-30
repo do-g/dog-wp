@@ -28,10 +28,18 @@ class Dog_Sample {
 		}
 	}
 
+	/***** UTILITIES *****/
+
+	public static function debug($public_message, $debug_message) {
+		return dog__debug_message($public_message, $debug_message, self::config('debug'));
+	}
+
 	/***** CONFIG *****/
 
 	private static function load_config() {
-		return apply_filters('dog__sp_options', array());
+		return apply_filters('dog__sp_options', array(
+			'debug' => false,
+		));
 	}
 
 	public static function config() {

@@ -3,7 +3,7 @@
 * Plugin Name: DOG Shortcode Facebook
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-shortcode-facebook
 * Description: Integrates facebook albums and photos into website pages
-* Version: 1.0.113
+* Version: 1.0.120
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

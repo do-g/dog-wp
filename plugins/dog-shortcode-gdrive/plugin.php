@@ -3,7 +3,7 @@
 * Plugin Name: DOG Shortcode Google Drive
 * Plugin URI: http://public.dorinoanagurau.ro/wp/plugins/dog-shortcode-gdrive
 * Description: Helps embed drive documents into posts
-* Version: 1.0.26
+* Version: 1.0.28
 * Author: Dorin Gurău
 * License: Private
 * Text Domain: dog

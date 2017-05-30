@@ -50,6 +50,10 @@ class Dog_Shortcode_GoogleDrive {
 	/***** LOGIC *****/
 
 	public static function parse($attrs, $content = null) {
+		if (!is_array($attrs) || !isset($attrs[self::ATTR_OBJECT])) {
+			$error_message = dog__txt('Missing parameter "${param}"', array('param' => self::ATTR_OBJECT));
+			return self::show_message(null, null, $error_message);
+		}
 		switch ($attrs[self::ATTR_OBJECT]) {
 			case self::OBJECT_DOC:
 			case self::OBJECT_SHEET:
@@ -58,13 +62,8 @@ class Dog_Shortcode_GoogleDrive {
 			case self::OBJECT_VIEWER:
 				return self::process_file($attrs, $content, $attrs[self::ATTR_OBJECT]);
 			default:
-				$public_message = dog__txt('Modulul a returnat o eroare. Conținutul nu poate fi încărcat.');
-				if (!isset($attrs[self::ATTR_OBJECT])) {
-					$debug_message = dog__txt('Lipsește parametrul "' . self::ATTR_OBJECT . '"');
-				} else {
-					$debug_message = dog__txt('Obiectul "' . $attrs[self::ATTR_OBJECT] . '" nu este recunoscut');
-				}
-				return self::wrap(Dog_Api_GoogleDrive::error_message(dog__debug_message($public_message, $debug_message)));
+				$error_message = dog__txt('Unknown object "${object}"', array('object' => $attrs[self::ATTR_OBJECT]));
+				return self::show_message(null, null, $error_message);
 		}
 	}
 
@@ -73,15 +72,13 @@ class Dog_Shortcode_GoogleDrive {
 		$mode = dog__value_or_default($attrs[self::ATTR_MODE], self::MODE_EMBED);
 		$object = $object ? $object : self::OBJECT_VIEWER;
 		if (!$ids) {
-			$public_message = dog__txt('Modulul a returnat o eroare. Fișierul nu poate fi încărcat.');
-			$debug_message = dog__txt('Pentru obiectul "' . $object . '" este necesar să se specifice parametrul "' . self::ATTR_ID . '"');
-			return self::wrap(Dog_Api_GoogleDrive::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+			$error_message = dog__txt('Object "${object}" requires "${id}" parameter to be specified', array('object' => $object, 'id' => self::ATTR_ID));
+			return self::show_message($object, $mode, $error_message);
 		}
 		$template = self::config('templates', $object, $mode);
 		if (!is_file($template) || !is_readable($template)) {
-			$public_message = dog__txt('Modulul a returnat o eroare. Fișierul nu poate fi afișat.');
-			$debug_message = dog__txt('Fișierul template "' . $template . '" pentru obiectul "' . $object . '" în modul "' . $mode . '" nu există sau nu poate fi citit');
-			return self::wrap(Dog_Api_GoogleDrive::error_message(dog__debug_message($public_message, $debug_message)), $object, $mode);
+			$error_message = dog__txt('Template "${template}" for object "${object}" in mode "${mode}" not found or unreadable', array('template' => $template, 'object' => $object, 'mode' => $mode));
+			return self::show_message($object, $mode, $error_message);
 		}
 		self::filter_attrs($attrs, $content, $object);
 		$output = '';
@@ -125,9 +122,8 @@ class Dog_Shortcode_GoogleDrive {
 	private static function wrap($content, $type = null, $mode = null) {
 		$template = self::config('templates', self::KEYWORD_WRAPPER);
 		if (!is_file($template) || !is_readable($template)) {
-			$public_message = dog__txt('Modulul a returnat o eroare. Resursele nu pot fi afișate.');
-			$debug_message = dog__txt('Fișierul template "' . $template . '" nu există sau nu poate fi citit');
-			return Dog_Api_GoogleDrive::error_message(dog__debug_message($public_message, $debug_message));
+			$error_message = dog__txt('Template "${template}" for object "${object}" not found or unreadable', array('template' => $template, 'object' => self::KEYWORD_WRAPPER));
+			return self::get_message($error_message);
 		}
 		return dog__get_file_output($template, array(
 			'content' => $content,
@@ -139,8 +135,33 @@ class Dog_Shortcode_GoogleDrive {
 		));
 	}
 
+	/***** UTILITIES *****/
+
 	public static function get_code($params) {
 		return dog__get_shortcode_text(self::TAG, $params);
+	}
+
+	public static function debug($public_message, $debug_message) {
+		return dog__debug_message($public_message, $debug_message, self::config('debug'));
+	}
+
+	public static function get_message($error_message = null, $empty_message = null, $error_public_message = null) {
+		if ($error_message) {
+			$message = dog__value_or_default($error_public_message, dog__txt('Modulul a returnat o eroare. Unele resurse nu pot fi afișate.'));
+			if (is_array($error_message)) {
+				$error_message = implode('. ', $error_message);
+			}
+			$message = Dog_Api_GoogleDrive::error_message(self::debug($message, $error_message));
+		} else {
+			$message = dog__value_or_default($empty_message, dog__txt('Nu am găsit resurse.'));
+			$message = Dog_Api_GoogleDrive::empty_message($message);
+		}
+		return $message;
+	}
+
+	public static function show_message($object, $mode, $error_message = null, $empty_message = null, $error_public_message = null) {
+		$message = self::get_message($error_message, $empty_message, $error_public_message);
+		return self::wrap($message, $object, $mode);
 	}
 
 	/***** CONFIG *****/
@@ -149,21 +170,21 @@ class Dog_Shortcode_GoogleDrive {
 		return apply_filters('dog__sg_options', array(
 			'templates' => array(
 				self::OBJECT_DOC => array(
-					self::MODE_EMBED => dog__sibling_path('gdrive-viewer-embed.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('viewer-embed.tpl.php', __FILE__),
 				),
 				self::OBJECT_SHEET => array(
-					self::MODE_EMBED => dog__sibling_path('gdrive-viewer-embed.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('viewer-embed.tpl.php', __FILE__),
 				),
 				self::OBJECT_SLIDE => array(
-					self::MODE_EMBED => dog__sibling_path('gdrive-viewer-embed.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('viewer-embed.tpl.php', __FILE__),
 				),
 				self::OBJECT_FORM => array(
-					self::MODE_EMBED => dog__sibling_path('gdrive-viewer-embed.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('viewer-embed.tpl.php', __FILE__),
 				),
 				self::OBJECT_VIEWER => array(
-					self::MODE_EMBED => dog__sibling_path('gdrive-viewer-embed.tpl.php', __FILE__),
+					self::MODE_EMBED => dog__sibling_path('viewer-embed.tpl.php', __FILE__),
 				),
-				self::KEYWORD_WRAPPER => dog__sibling_path('gdrive-wrapper.tpl.php', __FILE__),
+				self::KEYWORD_WRAPPER => dog__sibling_path('wrapper.tpl.php', __FILE__),
 			),
 			'css_class' => array(
 				self::OBJECT_DOC => null,
@@ -173,6 +194,7 @@ class Dog_Shortcode_GoogleDrive {
 				self::OBJECT_VIEWER => null,
 				self::KEYWORD_WRAPPER => null,
 			),
+			'debug' => false,
 		));
 	}
 

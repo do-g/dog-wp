@@ -5,11 +5,12 @@ require_once(realpath(dirname(__FILE__)) . '/_block-direct-access.php');
 class Dog_Updater {
 
 	const PLUGIN_SLUG = 'dog-updater';
-	const UPDATE_URL = 'http://public.dorinoanagurau.ro/wp/${type}/${name}/info.php';
+	const UPDATE_URL = 'http://public.dorinoanagurau.ro/wp/${type}/${name}/update.info.php';
 	const TYPE_PLUGINS = 'plugins';
 	const TYPE_THEMES = 'themes';
 	const OPTION_UPDATE_INFO = 'update_info';
 	private static $_initialized = false;
+	private static $_config = array();
 	private static $_dependencies = array();
 
 	public static function init() {
@@ -40,9 +41,12 @@ class Dog_Updater {
 	}
 
 	private static function get_update_url($type, $name) {
-		$url = self::UPDATE_URL;
-		$url = str_replace('${type}', $type, $url);
-		$url = str_replace('${name}', $name, $url);
+		$url = self::config('source', $type, $name);
+		if (!$url) {
+			$url = self::UPDATE_URL;
+			$url = str_replace('${type}', $type, $url);
+			$url = str_replace('${name}', $name, $url);
+		}
 		return $url;
 	}
 
@@ -58,9 +62,10 @@ class Dog_Updater {
 		$plugins = get_plugins();
 		if ($plugins) {
 			foreach ($plugins as $name => $data) {
-				if (in_array(substr($name, 0, 4), array('dog/', 'dog-'))) {
-					$plugin_name = explode('/', $name);
-					if ($result = self::check_update(self::TYPE_PLUGINS, reset($plugin_name), $data['Version'], $data['Name'])) {
+				$plugin_name_parts = explode('/', $name);
+				$plugin_name = reset($plugin_name_parts);
+				if (dog__is_dog_plugin($plugin_name) || self::config('source', 'plugins', $plugin_name)) {
+					if ($result = self::check_update(self::TYPE_PLUGINS, $plugin_name, $data['Version'], $data['Name'])) {
 						if (is_wp_error($result)) {
 							array_push($updates['errors'], $result->get_error_message());
 						} else {
@@ -74,6 +79,9 @@ class Dog_Updater {
 		if ($themes) {
 			foreach ($themes as $name => $data) {
 				if (in_array($name, dog__get_dog_theme_names())) {
+					if ($name == DOG__THEME_NAME) {
+						continue;
+					}
 					if ($result = self::check_update(self::TYPE_THEMES, $name, $data->Version, $data->Name)) {
 						if (is_wp_error($result)) {
 							array_push($updates['errors'], $result->get_error_message());
@@ -246,6 +254,30 @@ class Dog_Updater {
 		return array_merge($update_actions, array(
 			'dog_updates' => '<a href="' . admin_url('admin.php?page=' . self::PLUGIN_SLUG) . '" target="_parent">' . dog__txt('Return to DOG Updater') . '</a>',
 		));
+	}
+
+	/***** CONFIG *****/
+
+	private static function load_config() {
+		return apply_filters('dog__up_options', array(
+			'source' => array(
+				'plugins' => array(),
+				'themes' => array(),
+			),
+		));
+	}
+
+	public static function config() {
+		if (!self::$_config) {
+			self::$_config = self::load_config();
+		}
+		$config = self::$_config;
+		$args = func_get_args();
+		while ($args) {
+			$arg = array_shift($args);
+			$config = $config[$arg];
+		}
+		return $config;
 	}
 
 	/***** REGISTER TRANSLATION LABELS *****/

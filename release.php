@@ -14,6 +14,9 @@ if (!$mode) {
 	exit;
 }
 $full_path = realpath($path);
+if ($full_path === false) {
+	die("Source path not found\n");
+}
 $name = basename($full_path);
 $version_file = is_file("{$full_path}/style.css") ? "{$full_path}/style.css" : "{$full_path}/plugin.php";
 $contents = file_get_contents($version_file);

@@ -4,13 +4,13 @@ get_header();
 ?><div class="w-container main-container">
 	<div class="breadcrumbs"></div>
 	<div class="content-columns">
-		<?php if (DOG__SIDEBAR_ON_LEFT) {
+		<?php if (dog__config('sidebar_on_left')) {
 			dog__include_template('sidebar');
 		} ?>
 		<div class="content-column main"<?php if ($tpl_data['itemlist']) { ?> itemscope itemtype="http://schema.org/ItemList"<?php } ?>><?php
 			dog__include_template($tpl_data['template'], $tpl_data);
 		?></div>
-		<?php if (!DOG__SIDEBAR_ON_LEFT) {
+		<?php if (!dog__config('sidebar_on_left')) {
 			dog__include_template('sidebar');
 		} ?>
 	</div>
